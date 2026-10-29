@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>古诗词学习工作台</title>
+<!-- 本工作台为单文件离线应用：所有样式、脚本、诗词数据内联，数据存于浏览器 localStorage -->
+<style>
+:root{
+  --ink:#23201c;
+  --ink-2:#5c554c;
+  --ink-3:#8f887e;
+  --line:#e8e2d8;
+  --bg:#faf8f3;
+  --card:#ffffff;
+  --brand:#2c6e5b;
+  --brand-soft:#eaf2ee;
+  --warn:#b3402f;
+  --warn-soft:#fbeceb;
+  --gold:#a8763e;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(35,32,28,.04),0 8px 24px rgba(35,32,28,.05);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",Roboto,sans-serif;
+  background:var(--bg);color:var(--ink);font-size:15px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input{font-family:inherit}
+h1,h2,h3,h4,p{margin:0}
+svg{display:block}
+.app{display:flex;min-height:100vh}
+
+/* ---------- 侧边栏 ---------- */
+.side{
+  width:236px;flex:0 0 236px;background:#fff;border-right:1px solid var(--line);
+  padding:22px 16px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh;
+}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 20px}
+.brand-mark{width:34px;height:34px;border-radius:10px;background:var(--brand);display:grid;place-items:center;flex:0 0 34px}
+.brand-txt{font-size:15px;font-weight:700;letter-spacing:.5px}
+.brand-sub{font-size:11px;color:var(--ink-3);letter-spacing:1px}
+.nav-btn{
+  display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;
+  font-size:14px;color:var(--ink-2);width:100%;text-align:left;min-height:44px;
+}
+.nav-btn:hover{background:#f6f3ec}
+.nav-btn.on{background:var(--brand-soft);color:var(--brand);font-weight:600}
+.nav-btn .badge{
+  margin-left:auto;font-size:11px;background:var(--warn);color:#fff;border-radius:9px;
+  padding:1px 7px;font-weight:600;min-width:20px;text-align:center;
+}
+.nav-btn.on .badge{background:var(--warn)}
+.side-foot{margin-top:auto;font-size:11px;color:var(--ink-3);line-height:1.7;padding:10px 8px 0;border-top:1px solid var(--line)}
+
+/* ---------- 主区 ---------- */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{
+  display:flex;align-items:center;gap:10px;padding:14px 26px;background:rgba(250,248,243,.9);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;
+}
+.topbar h2{font-size:16px;font-weight:700;letter-spacing:.5px}
+.topbar .sp{flex:1}
+.sync{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-3);background:#fff;
+  border:1px solid var(--line);border-radius:20px;padding:5px 11px}
+.dot{width:6px;height:6px;border-radius:50%;background:#3f9b6d}
+.mini-btn{
+  display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2);
+  background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 11px;min-height:36px;
+}
+.mini-btn:hover{border-color:#d6cec0;color:var(--ink)}
+.view{padding:24px 26px 90px;display:none;max-width:1120px;width:100%}
+.view.on{display:block}
+
+/* ---------- 通用卡片 ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.sec-title{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:14px;font-weight:700;color:var(--ink)}
+.sec-title .line-deco{width:3px;height:14px;border-radius:2px;background:var(--brand)}
+.hint{font-size:12.5px;color:var(--ink-3);font-weight:400}
+
+/* ---------- 今日复习 ---------- */
+.greet{margin-bottom:20px}
+.greet h1{font-size:24px;font-weight:700;letter-spacing:.5px}
+.greet p{font-size:13px;color:var(--ink-3);margin-top:5px}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
+.stat .k{font-size:12px;color:var(--ink-3)}
+.stat .v{font-size:26px;font-weight:700;margin-top:2px;letter-spacing:.5px}
+.stat .v small{font-size:12px;font-weight:400;color:var(--ink-3);margin-left:3px}
+.stat.alert .v{color:var(--warn)}
+
+.review-list{display:flex;flex-direction:column;gap:10px}
+.rev{display:flex;align-items:center;gap:14px;padding:15px 16px;background:#fff;
+  border:1px solid var(--line);border-left:3px solid var(--brand);border-radius:12px;box-shadow:var(--shadow)}
+.rev.late{border-left-color:var(--warn);background:linear-gradient(90deg,var(--warn-soft),#fff 45%)}
+.rev-main{flex:1;min-width:0;cursor:pointer}
+.rev-t{font-size:16px;font-weight:600;letter-spacing:.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rev-s{font-size:12.5px;color:var(--ink-3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{font-size:11px;padding:2px 7px;border-radius:6px;background:#f3f0e9;color:var(--ink-3);font-weight:500}
+.tag.late{background:var(--warn-soft);color:var(--warn)}
+.tag.today{background:#eef4ea;color:#5d7d43}
+.tag.master{background:var(--brand-soft);color:var(--brand)}
+.rev-act{display:flex;gap:8px;flex:0 0 auto}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 14px;
+  border-radius:10px;font-size:13.5px;font-weight:600;border:1px solid var(--line);background:#fff;color:var(--ink-2);
+}
+.btn:hover{border-color:#cfc7b8}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{background:#255e4d}
+.btn.danger{color:var(--warn);border-color:#efd6d2}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink-3)}
+.btn.sm{min-height:36px;padding:0 12px;font-size:12.5px}
+.empty{text-align:center;padding:52px 20px;color:var(--ink-3)}
+.empty h3{font-size:15px;color:var(--ink-2);margin-bottom:6px;font-weight:600}
+.empty p{font-size:13px;margin-bottom:16px}
+
+/* ---------- 搜索 ---------- */
+.search-box{position:relative;margin-bottom:14px}
+.search-box svg{position:absolute;left:16px;top:50%;transform:translateY(-50%);opacity:.4}
+.search-input{
+  width:100%;height:52px;border-radius:13px;border:1px solid var(--line);background:#fff;
+  padding:0 44px 0 46px;font-size:16px;color:var(--ink);outline:none;box-shadow:var(--shadow);
+}
+.search-input:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+.search-input::placeholder{color:#b5ada1}
+.clear-x{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:34px;height:34px;
+  display:none;place-items:center;border-radius:8px;color:var(--ink-3)}
+.clear-x.on{display:grid}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.chip{
+  padding:7px 13px;border-radius:20px;font-size:13px;background:#fff;border:1px solid var(--line);
+  color:var(--ink-2);min-height:36px;display:inline-flex;align-items:center;
+}
+.chip.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+.res-meta{font-size:12.5px;color:var(--ink-3);margin-bottom:10px}
+.res-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.res{
+  padding:14px 16px;background:#fff;border:1px solid var(--line);border-radius:12px;
+  cursor:pointer;transition:.15s;box-shadow:var(--shadow);position:relative;min-width:0;overflow:hidden;
+}
+.res:hover{border-color:var(--brand);transform:translateY(-1px)}
+.res-t{font-size:15.5px;font-weight:600;letter-spacing:.5px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.res-a{font-size:12.5px;color:var(--ink-3);margin-top:4px}
+.res-l{font-size:13px;color:var(--ink-2);margin-top:7px;font-family:"Songti SC","STSong",serif;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.res .learned-dot{position:absolute;right:13px;top:13px;width:8px;height:8px;border-radius:50%;background:var(--brand)}
+mark{background:#fff2c9;color:inherit;padding:0 1px;border-radius:2px}
+
+/* ---------- 题库 ---------- */
+.lib-head{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-bottom:20px}
+.ring-wrap{display:flex;align-items:center;gap:16px;padding:18px 20px;background:#fff;
+  border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);flex:1;min-width:280px}
+.ring-txt .big{font-size:22px;font-weight:700}
+.ring-txt .big small{font-size:12.5px;color:var(--ink-3);font-weight:400}
+.ring-txt .sub{font-size:12.5px;color:var(--ink-3);margin-top:4px}
+.lib-tools{display:flex;gap:8px;flex-wrap:wrap}
+.lib-list{display:flex;flex-direction:column;gap:9px}
+.lib-item{display:flex;align-items:center;gap:12px;padding:13px 15px;background:#fff;
+  border:1px solid var(--line);border-radius:12px}
+.lib-item .m{flex:1;min-width:0;cursor:pointer}
+.lib-item .t{font-size:15px;font-weight:600;letter-spacing:.5px}
+.lib-item .s{font-size:12px;color:var(--ink-3);margin-top:3px}
+.lib-item .s b{color:var(--brand);font-weight:600}
+.prog{height:4px;background:#f0ece4;border-radius:3px;margin-top:8px;overflow:hidden;max-width:220px}
+.prog i{display:block;height:100%;background:var(--brand);border-radius:3px}
+
+/* ---------- 详情弹层 ---------- */
+.mask{position:fixed;inset:0;background:rgba(35,32,28,.42);z-index:60;display:none;
+  align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(2px)}
+.mask.on{display:flex}
+.drawer{background:#fff;border-radius:18px;width:100%;max-width:720px;max-height:86vh;display:flex;flex-direction:column;
+  box-shadow:0 24px 70px rgba(35,32,28,.28);overflow:hidden}
+.d-head{padding:20px 24px 14px;border-bottom:1px solid var(--line);position:relative}
+.d-head h2{font-size:21px;font-weight:700;letter-spacing:1px;padding-right:40px;font-family:"Songti SC","STSong",serif}
+.d-meta{font-size:12.5px;color:var(--ink-3);margin-top:6px;display:flex;gap:10px;flex-wrap:wrap}
+.d-close{position:absolute;right:14px;top:16px;width:36px;height:36px;border-radius:9px;display:grid;place-items:center;color:var(--ink-3)}
+.d-close:hover{background:#f5f2eb}
+.d-tools{display:flex;gap:8px;padding:10px 24px;border-bottom:1px solid var(--line);background:#fcfaf6;flex-wrap:wrap}
+.tool-on{border-color:var(--brand)!important;color:var(--brand)!important;background:var(--brand-soft)!important;font-weight:600}
+.d-body{padding:22px 24px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
+.poem{text-align:center;padding:6px 0 10px}
+.pl{margin-bottom:6px}
+.pl .hz{font-family:"Songti SC","STSong","SimSun",serif;font-size:22px;line-height:1.55;color:var(--ink);
+  display:flex;flex-wrap:wrap;justify-content:center;column-gap:11px;row-gap:2px}
+.ch{position:relative;display:inline-block;padding-top:17px}
+.ch .py{position:absolute;left:50%;top:0;transform:translateX(-50%);font-size:10.5px;color:#a89f92;
+  font-family:-apple-system,"Segoe UI",sans-serif;letter-spacing:0;font-weight:400;white-space:nowrap;
+  opacity:1;transition:opacity .2s}
+.poem.hide-py .ch .py{opacity:0}
+.pl .tr{font-size:12.5px;color:var(--ink-3);line-height:1.75;margin:2px 0 10px;padding:0 8px}
+.poem.hide-tr .tr{display:none}
+.d-sec{margin-top:20px;padding-top:16px;border-top:1px dashed var(--line)}
+.d-sec h4{font-size:12.5px;font-weight:700;color:var(--brand);letter-spacing:1.5px;margin-bottom:7px}
+.d-sec p{font-size:13.5px;color:var(--ink-2);line-height:1.85}
+.d-foot{padding:13px 24px;border-top:1px solid var(--line);display:flex;gap:9px;align-items:center;background:#fcfaf6;
+  padding-bottom:calc(13px + env(safe-area-inset-bottom))}
+.d-foot .sp{flex:1}
+.d-foot .tip{font-size:12px;color:var(--ink-3)}
+
+/* ---------- 移动端 tabbar ---------- */
+.tabbar{display:none}
+.toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%) translateY(12px);background:var(--ink);
+  color:#fff;font-size:13px;padding:10px 18px;border-radius:10px;opacity:0;pointer-events:none;transition:.24s;z-index:99}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------- 趣味练习 ---------- */
+.mode-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.mode-row .mode-hint{font-size:12.5px;color:var(--ink-3);margin-left:auto}
+.play-card{padding:22px 26px;min-height:300px;display:flex;flex-direction:column}
+.play-score{display:flex;gap:22px;margin-bottom:16px;font-size:13px;color:var(--ink-2)}
+.play-score b{font-size:22px;color:var(--brand);font-weight:700;margin-left:5px;line-height:1}
+.play-score .streak b{color:var(--gold)}
+.play-q{font-family:"Songti SC","STSong","SimSun",serif;font-size:25px;line-height:1.65;text-align:center;
+  letter-spacing:1px;color:var(--ink);margin:4px 0 2px}
+.play-q .sub{font-size:12.5px;color:var(--ink-3);font-family:-apple-system,sans-serif;letter-spacing:0;margin-top:7px}
+.play-py{text-align:center;color:#a89f92;font-size:12px;margin-bottom:14px;font-family:-apple-system,sans-serif}
+.play-input{width:100%;max-width:440px;height:48px;border-radius:11px;border:1px solid var(--line);
+  padding:0 16px;font-size:18px;font-family:"Songti SC","STSong",serif;text-align:center;outline:none;
+  box-shadow:var(--shadow);margin:0 auto;display:block}
+.play-input:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+.play-input.ok{border-color:#3f9b6d;box-shadow:0 0 0 3px #e7f3ec}
+.play-input.bad{border-color:var(--warn);box-shadow:0 0 0 3px var(--warn-soft)}
+.play-ans{text-align:center;font-family:"Songti SC","STSong",serif;font-size:18px;margin:12px auto 0;color:var(--warn);max-width:440px}
+.play-ans.ok{color:var(--brand)}
+.play-actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+.play-foot{margin-top:auto;padding-top:16px;border-top:1px dashed var(--line);font-size:12.5px;color:var(--ink-3);text-align:center}
+.play-empty{text-align:center;padding:48px 16px;color:var(--ink-3);font-size:14px}
+
+@media (max-width:900px){
+  .res-list{grid-template-columns:1fr}
+}
+@media (max-width:768px){
+  .side{display:none}
+  .view{padding:18px 15px 96px}
+  .topbar{padding:11px 15px}
+  .topbar h2{font-size:15px}
+  .sync{display:none}
+  #demoTip{flex-direction:column;align-items:flex-start!important}
+  #demoTip .btn{width:100%}
+  .greet h1{font-size:21px}
+  .stat-row{gap:9px}
+  .stat{padding:11px 12px}
+  .stat .v{font-size:21px}
+  .rev{flex-wrap:wrap;gap:10px}
+  .rev-act{width:100%;justify-content:flex-end}
+  .btn{min-height:44px}
+  .btn.sm{min-height:40px}
+  .tabbar{
+    display:flex;position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.97);
+    border-top:1px solid var(--line);z-index:50;padding-bottom:env(safe-area-inset-bottom);
+    backdrop-filter:blur(10px);
+  }
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 7px;
+    font-size:11px;color:var(--ink-3);min-height:52px;position:relative}
+  .tab.on{color:var(--brand);font-weight:600}
+  .tab .tbadge{position:absolute;top:3px;right:calc(50% - 26px);background:var(--warn);color:#fff;
+    font-size:9.5px;border-radius:8px;padding:0 5px;font-weight:700}
+  .mask{padding:0;align-items:flex-end}
+  .drawer{max-width:none;max-height:94vh;border-radius:18px 18px 0 0}
+  .d-body{padding:18px 15px}
+  .pl .hz{font-size:20px;line-height:1.5;column-gap:8px}
+  .lib-tools{width:100%}
+  .lib-tools .btn{flex:1}
+  .play-q{font-size:21px}
+  .play-card{padding:18px 15px}
+  .mode-row .mode-hint{margin-left:0;flex-basis:100%}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 侧边栏 -->
+  <aside class="side">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7M9 11h5"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-txt">古诗词工作台</div>
+        <div class="brand-sub">统编教材 · 92 首</div>
+      </div>
+    </div>
+    <button class="nav-btn on" data-view="today">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>
+      今日复习 <span class="badge" id="navBadge" style="display:none">0</span>
+    </button>
+    <button class="nav-btn" data-view="search">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      查找诗词
+    </button>
+    <button class="nav-btn" data-view="library">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h3v18H6a2 2 0 0 1-2-2z"/><path d="M11 3h4v18h-4z"/><path d="M17 4l2.6 15"/></svg>
+      学习题库
+    </button>
+    <button class="nav-btn" data-view="play">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg>
+      趣味练习
+    </button>
+    <div class="side-foot">
+      数据保存在本机浏览器<br>建议定期「导出备份」
+    </div>
+  </aside>
+
+  <!-- 主区 -->
+  <div class="main">
+    <div class="topbar">
+      <h2 id="viewTitle">今日复习</h2>
+      <div class="sp"></div>
+      <div class="sync"><i class="dot"></i><span class="lbl">本地存储</span></div>
+      <button class="mini-btn" id="btnExport" title="导出备份">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 19h16"/></svg>
+        导出
+      </button>
+      <button class="mini-btn" id="btnImport" title="导入恢复">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M8 7l4-4 4 4"/><path d="M4 19h16"/></svg>
+        导入
+      </button>
+      <input type="file" id="fileInput" accept=".json,application/json" style="display:none">
+    </div>
+
+    <!-- 今日复习 -->
+    <section class="view on" id="view-today">
+      <div class="greet">
+        <h1 id="greetTitle">今天要复习的古诗词</h1>
+        <p id="greetSub">—</p>
+      </div>
+      <div class="stat-row">
+        <div class="stat alert"><div class="k">待复习</div><div class="v" id="statDue">0<small>首</small></div></div>
+        <div class="stat"><div class="k">已学</div><div class="v" id="statLearned">0<small>首</small></div></div>
+        <div class="stat"><div class="k">已掌握</div><div class="v" id="statMaster">0<small>首</small></div></div>
+      </div>
+
+      <div id="demoTip" style="display:none;background:#fff8e8;border:1px solid #f0e0bd;border-radius:11px;
+        padding:11px 14px;margin-bottom:14px;font-size:12.5px;color:#8a6a2c;display:none;align-items:center;gap:10px">
+        <span style="flex:1">当前是示例数据，可以点右侧按钮清空，从你自己的第一首诗开始。</span>
+        <button class="btn sm" id="btnClearDemo" style="border-color:#e6d3a8;color:#8a6a2c;background:#fff">清空示例</button>
+      </div>
+
+      <div class="sec-title"><i class="line-deco"></i>今天要复习</div>
+      <div class="review-list" id="reviewList"></div>
+    </section>
+
+    <!-- 查找 -->
+    <section class="view" id="view-search">
+      <div class="search-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#23201c" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input class="search-input" id="q" placeholder="输入诗名、作者或诗句，如「静夜思」「李白」「床前明月光」" autocomplete="off">
+        <button class="clear-x" id="clearQ" aria-label="清空">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <div class="chips" id="chips">
+        <button class="chip on" data-f="all">全部</button>
+        <button class="chip" data-f="小学">小学</button>
+        <button class="chip" data-f="初中">初中</button>
+        <button class="chip" data-f="learned">已学习</button>
+        <button class="chip" data-f="master">已掌握</button>
+      </div>
+      <div class="res-meta" id="resMeta"></div>
+      <div class="res-list" id="resList"></div>
+    </section>
+
+    <!-- 题库 -->
+    <section class="view" id="view-library">
+      <div class="lib-head">
+        <div class="ring-wrap">
+          <svg width="76" height="76" viewBox="0 0 76 76" id="ring">
+            <circle cx="38" cy="38" r="32" fill="none" stroke="#f0ece4" stroke-width="7"/>
+            <circle cx="38" cy="38" r="32" fill="none" stroke="#2c6e5b" stroke-width="7" stroke-linecap="round"
+              stroke-dasharray="201" stroke-dashoffset="201" transform="rotate(-90 38 38)" id="ringArc"/>
+            <text x="38" y="42" text-anchor="middle" font-size="15" font-weight="700" fill="#23201c" id="ringPct">0%</text>
+          </svg>
+          <div class="ring-txt">
+            <div class="big" id="libBig">0<small> / 92 首</small></div>
+            <div class="sub" id="libSub">学习进度</div>
+          </div>
+        </div>
+        <div class="lib-tools">
+          <button class="btn" id="btnExport2">导出备份</button>
+          <button class="btn" id="btnImport2">导入恢复</button>
+          <button class="btn danger" id="btnClearAll">清空全部</button>
+        </div>
+      </div>
+      <div class="sec-title"><i class="line-deco"></i>我的学习题库 <span class="hint" id="libCount"></span></div>
+      <div class="lib-list" id="libList"></div>
+    </section>
+
+    <!-- 趣味练习 -->
+    <section class="view" id="view-play">
+      <div class="greet">
+        <h1>趣味练习</h1>
+        <p id="playSub">用「上句接下句」检验记忆，听读 + 默写双管齐下</p>
+      </div>
+      <div class="mode-row">
+        <div class="chips" id="playMode">
+          <button class="chip on" data-m="link">上句接下句</button>
+          <button class="chip" data-m="fill">填字补全</button>
+        </div>
+        <span class="mode-hint" id="playSrc"></span>
+      </div>
+      <div class="card play-card" id="playCard"></div>
+    </section>
+  </div>
+</div>
+
+<!-- 移动端底部导航 -->
+<nav class="tabbar">
+  <button class="tab on" data-view="today">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>
+    今日复习 <span class="tbadge" id="tabBadge" style="display:none">0</span>
+  </button>
+  <button class="tab" data-view="search">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    查找
+  </button>
+  <button class="tab" data-view="library">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h3v18H6a2 2 0 0 1-2-2z"/><path d="M11 3h4v18h-4z"/><path d="M17 4l2.6 15"/></svg>
+    题库
+  </button>
+  <button class="tab" data-view="play">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg>
+    练习
+  </button>
+</nav>
+
+<!-- 详情弹层 -->
+<div class="mask" id="mask">
+  <div class="drawer">
+    <div class="d-head">
+      <h2 id="dTitle">—</h2>
+      <div class="d-meta" id="dMeta"></div>
+      <button class="d-close" id="dClose" aria-label="关闭">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="d-tools">
+      <button class="btn sm tool-on" id="tgPy">拼音 开</button>
+      <button class="btn sm tool-on" id="tgTr">译文 开</button>
+      <button class="btn sm" id="tgRead">朗读</button>
+    </div>
+    <div class="d-body">
+      <div class="poem" id="dPoem"></div>
+      <div class="d-sec"><h4>注 释</h4><p id="dNote"></p></div>
+      <div class="d-sec"><h4>作 者</h4><p id="dIntro"></p></div>
+      <div class="d-sec"><h4>学习记录</h4><p id="dRecord"></p></div>
+    </div>
+    <div class="d-foot">
+      <span class="tip" id="dTip"></span>
+      <div class="sp"></div>
+      <button class="btn primary" id="dLearn">加入学习题库</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ 数据 ============ */
+var POEMS = [{"t":"咏鹅","a":"骆宾王","d":"唐","lv":"小学","g":"一年级上","lines":["鹅，鹅，鹅，","曲项向天歌。","白毛浮绿水，","红掌拨清波。"],"tr":["鹅呀鹅呀鹅，","弯着长长的脖子朝天欢叫。","雪白的羽毛浮在碧绿的水面上，","红红的脚掌拨动着清亮的波纹。"],"note":"曲项：弯着脖子。项，脖子。拨：划动。","intro":"骆宾王（约619—约687），唐代诗人，'初唐四杰'之一，七岁写下这首诗。","id":1,"py":[["é","","é","","é",""],["qū","xiàng","xiàng","tiān","gē",""],["bái","máo","fú","lǜ","shuǐ",""],["hóng","zhǎng","bō","qīng","bō",""]]},{"t":"春晓","a":"孟浩然","d":"唐","lv":"小学","g":"一年级下","lines":["春眠不觉晓，","处处闻啼鸟。","夜来风雨声，","花落知多少。"],"tr":["春天睡得香，不知不觉天就亮了，","醒来只听见到处都是鸟儿的叫声。","想起昨夜隐约的风雨声，","不知道有多少花被打落了。"],"note":"晓：天亮。不觉晓：不知不觉天亮了。闻：听见。","intro":"孟浩然（689—740），唐代山水田园诗派代表，与王维并称'王孟'。","id":2,"py":[["chūn","mián","bù","jué","xiǎo",""],["chù","chù","wén","tí","niǎo",""],["yè","lái","fēng","yǔ","shēng",""],["huā","luò","zhī","duō","shǎo",""]]},{"t":"静夜思","a":"李白","d":"唐","lv":"小学","g":"一年级下","lines":["床前明月光，","疑是地上霜。","举头望明月，","低头思故乡。"],"tr":["床前洒下一片明亮的月光，","恍惚间以为地上结了一层白霜。","抬起头望着天上的明月，","低下头就想起了远方的故乡。"],"note":"疑：好像、以为。举头：抬头。床：一说指井栏或坐卧的榻。","intro":"李白（701—762），字太白，号青莲居士，唐代浪漫主义诗人，人称'诗仙'。","id":3,"py":[["chuáng","qián","míng","yuè","guāng",""],["yí","shì","dì","shàng","shuāng",""],["jǔ","tóu","wàng","míng","yuè",""],["dī","tóu","sī","gù","xiāng",""]]},{"t":"古朗月行（节选）","a":"李白","d":"唐","lv":"小学","g":"一年级上","lines":["小时不识月，","呼作白玉盘。","又疑瑶台镜，","飞在青云端。"],"tr":["小时候不认识月亮，","把它叫作白玉做的盘子。","又怀疑它是瑶台仙境的镜子，","飞挂在高高的青云之上。"],"note":"呼作：称作。瑶台：传说中神仙居住的地方。端：上面。","intro":"选自《全唐诗》，原诗较长，教材节选开头四句，写儿童对月亮的想象。","id":4,"py":[["xiǎo","shí","bù","shí","yuè",""],["hū","zuò","bái","yù","pán",""],["yòu","yí","yáo","tái","jìng",""],["fēi","zài","qīng","yún","duān",""]]},{"t":"赠汪伦","a":"李白","d":"唐","lv":"小学","g":"一年级下","lines":["李白乘舟将欲行，","忽闻岸上踏歌声。","桃花潭水深千尺，","不及汪伦送我情。"],"tr":["我坐上船正要出发，","忽然听见岸上传来踏着节拍的歌声。","桃花潭的水哪怕有千尺深，","也比不上汪伦送我的这份情谊。"],"note":"踏歌：踏着节拍唱歌。桃花潭：在今安徽泾县。不及：比不上。","intro":"汪伦是李白在泾县结识的朋友，这首诗写临别时友人踏歌相送的情谊。","id":5,"py":[["lǐ","bái","chéng","zhōu","jiāng","yù","xíng",""],["hū","wén","àn","shàng","tà","gē","shēng",""],["táo","huā","tán","shuǐ","shēn","qiān","chǐ",""],["bù","jí","wāng","lún","sòng","wǒ","qíng",""]]},{"t":"望庐山瀑布","a":"李白","d":"唐","lv":"小学","g":"二年级上","lines":["日照香炉生紫烟，","遥看瀑布挂前川。","飞流直下三千尺，","疑是银河落九天。"],"tr":["阳光照着香炉峰，腾起紫色的云烟，","远远望去，瀑布像一条大河挂在山前。","水流飞泻而下，足有三千尺长，","让人怀疑是银河从九天之上落了下来。"],"note":"香炉：香炉峰。生紫烟：升起紫色云雾。川：河流。九天：天的最高处。","intro":"写于李白游庐山时，用夸张和想象写瀑布的雄伟气势。","id":6,"py":[["rì","zhào","xiāng","lú","shēng","zǐ","yān",""],["yáo","kàn","pù","bù","guà","qián","chuān",""],["fēi","liú","zhí","xià","sān","qiān","chǐ",""],["yí","shì","yín","hé","luò","jiǔ","tiān",""]]},{"t":"早发白帝城","a":"李白","d":"唐","lv":"小学","g":"三年级下","lines":["朝辞白帝彩云间，","千里江陵一日还。","两岸猿声啼不住，","轻舟已过万重山。"],"tr":["清晨辞别高入彩云的白帝城，","千里之外的江陵一天就能到达。","两岸的猿猴还在不住地啼叫，","轻快的小船已驶过了重重山峦。"],"note":"发：出发。白帝城：在今重庆奉节。江陵：今湖北荆州。万重山：层层叠叠的山。","intro":"759 年李白遇赦东归，途中写下此诗，全篇写舟行之快与心情之畅。","id":7,"py":[["zhāo","cí","bái","dì","cǎi","yún","jiān",""],["qiān","lǐ","jiāng","líng","yī","rì","huán",""],["liǎng","àn","yuán","shēng","tí","bú","zhù",""],["qīng","zhōu","yǐ","guò","wàn","chóng","shān",""]]},{"t":"独坐敬亭山","a":"李白","d":"唐","lv":"小学","g":"四年级下","lines":["众鸟高飞尽，","孤云独去闲。","相看两不厌，","只有敬亭山。"],"tr":["鸟群飞得高高的，直到看不见，","一片孤云也慢悠悠地飘走了。","彼此对望而看不厌的，","只有我和这座敬亭山。"],"note":"尽：没有了。闲：悠闲。厌：满足、厌倦。","intro":"李白晚年漂泊宣城时所作，以山为伴，写出孤独中的自得。","id":8,"py":[["zhòng","niǎo","gāo","fēi","jǐn",""],["gū","yún","dú","qù","xián",""],["xiāng","kàn","liǎng","bù","yàn",""],["zhǐ","yǒu","jìng","tíng","shān",""]]},{"t":"黄鹤楼送孟浩然之广陵","a":"李白","d":"唐","lv":"小学","g":"五年级下","lines":["故人西辞黄鹤楼，","烟花三月下扬州。","孤帆远影碧空尽，","唯见长江天际流。"],"tr":["老朋友在黄鹤楼与我辞别，向东而去，","在柳絮如烟的三月顺流下扬州。","帆影渐渐消失在水天相接的碧空尽头，","只看见长江滚滚向天边流去。"],"note":"故人：老朋友。西辞：黄鹤楼在扬州之西，故称西辞。烟花：指春日繁花似雾的景色。","intro":"写李白在黄鹤楼送别孟浩然，全诗不着'别'字而离情尽现。","id":9,"py":[["gù","rén","xī","cí","huáng","hè","lóu",""],["yān","huā","sān","yuè","xià","yáng","zhōu",""],["gū","fān","yuǎn","yǐng","bì","kōng","jǐn",""],["wéi","jiàn","cháng","jiāng","tiān","jì","liú",""]]},{"t":"绝句（两个黄鹂）","a":"杜甫","d":"唐","lv":"小学","g":"二年级下","lines":["两个黄鹂鸣翠柳，","一行白鹭上青天。","窗含西岭千秋雪，","门泊东吴万里船。"],"tr":["两只黄鹂在翠绿的柳枝上鸣叫，","一行白鹭直飞向湛蓝的天空。","窗口正对着西岭上千年不化的积雪，","门前停泊着来自万里之外东吴的船。"],"note":"含：容纳、框住。西岭：西岭雪山。泊：停船靠岸。东吴：今江苏一带。","intro":"杜甫（712—770），字子美，唐代现实主义诗人，被尊为'诗圣'。此诗写成都草堂春景。","id":10,"py":[["liǎng","gè","huáng","lí","míng","cuì","liǔ",""],["yī","háng","bái","lù","shàng","qīng","tiān",""],["chuāng","hán","xī","lǐng","qiān","qiū","xuě",""],["mén","pō","dōng","wú","wàn","lǐ","chuán",""]]},{"t":"绝句（迟日江山丽）","a":"杜甫","d":"唐","lv":"小学","g":"三年级下","lines":["迟日江山丽，","春风花草香。","泥融飞燕子，","沙暖睡鸳鸯。"],"tr":["春日变长，江山格外明丽，","春风送来花草的清香。","泥土湿润松软，燕子飞来飞去衔泥筑巢，","沙洲被晒得暖暖的，鸳鸯在那里安睡。"],"note":"迟日：春日渐长，故称迟日。泥融：泥土湿润。鸳鸯：水鸟，常雌雄相伴。","intro":"杜甫寓居成都草堂时所作，五言绝句写初春景物，明快清新。","id":11,"py":[["chí","rì","jiāng","shān","lì",""],["chūn","fēng","huā","cǎo","xiāng",""],["ní","róng","fēi","yàn","zi",""],["shā","nuǎn","shuì","yuān","yāng",""]]},{"t":"春夜喜雨","a":"杜甫","d":"唐","lv":"小学","g":"六年级下","lines":["好雨知时节，","当春乃发生。","随风潜入夜，","润物细无声。","野径云俱黑，","江船火独明。","晓看红湿处，","花重锦官城。"],"tr":["好雨像是懂得时令，","正当春天就应时而下。","它随着春风悄悄在夜里落下，","无声无息地滋润着万物。","田野小路与云一样漆黑，","只有江上渔船的一点灯火独自明亮。","天亮后去看那被雨打湿的红花，","满城花朵沉甸甸地开遍了锦官城。"],"note":"乃：就。发生：催发植物生长。潜：悄悄地。红湿处：被雨打湿的花丛。锦官城：成都的别称。","intro":"写于成都草堂，全诗一个'喜'字不露面，却处处是喜雨之情。","id":12,"py":[["hǎo","yǔ","zhī","shí","jié",""],["dāng","chūn","nǎi","fā","shēng",""],["suí","fēng","qián","rù","yè",""],["rùn","wù","xì","wú","shēng",""],["yě","jìng","yún","jù","hēi",""],["jiāng","chuán","huǒ","dú","míng",""],["xiǎo","kàn","hóng","shī","chù",""],["huā","zhòng","jǐn","guān","chéng",""]]},{"t":"望岳","a":"杜甫","d":"唐","lv":"初中","g":"七年级下","lines":["岱宗夫如何？","齐鲁青未了。","造化钟神秀，","阴阳割昏晓。","荡胸生曾云，","决眦入归鸟。","会当凌绝顶，","一览众山小。"],"tr":["泰山到底怎么样呢？","在齐鲁大地上，它青翠的山色望不到尽头。","大自然把神奇秀美都聚集在这里，","山南山北被分割成一明一暗。","层层云气升腾，涤荡着胸襟，","睁大眼睛远望，归鸟尽入眼帘。","一定要登上那最高峰，","俯瞰群山，它们都会显得渺小。"],"note":"岱宗：泰山。齐鲁：泰山南北的古国名。钟：聚集。眦：眼眶。会当：终当、一定要。","intro":"杜甫青年时游泰山所作，是他现存最早的诗之一，气象开阔。","id":13,"py":[["dài","zōng","fū","rú","hé",""],["qí","lǔ","qīng","wèi","liǎo",""],["zào","huà","zhōng","shén","xiù",""],["yīn","yáng","gē","hūn","xiǎo",""],["dàng","xiōng","shēng","céng","yún",""],["jué","zì","rù","guī","niǎo",""],["huì","dāng","líng","jué","dǐng",""],["yī","lǎn","zhòng","shān","xiǎo",""]]},{"t":"春望","a":"杜甫","d":"唐","lv":"初中","g":"八年级上","lines":["国破山河在，","城春草木深。","感时花溅泪，","恨别鸟惊心。","烽火连三月，","家书抵万金。","白头搔更短，","浑欲不胜簪。"],"tr":["国都已经沦陷，山河依旧还在，","长安城春天来了，草木疯长。","感伤时局，看见花开也落泪，","痛恨离别，听到鸟鸣也心惊。","战火接连不断烧了几个月，","一封家书抵得上万两黄金。","满头白发越搔越少，","简直连簪子都插不住了。"],"note":"国破：指安史之乱中长安失陷。烽火：战火。抵：值。浑：简直。簪：插发的簪子。","intro":"756 年安史之乱中杜甫被俘困居长安时所作，忧国思家之情沉痛。","id":14,"py":[["guó","pò","shān","hé","zài",""],["chéng","chūn","cǎo","mù","shēn",""],["gǎn","shí","huā","jiàn","lèi",""],["hèn","bié","niǎo","jīng","xīn",""],["fēng","huǒ","lián","sān","yuè",""],["jiā","shū","dǐ","wàn","jīn",""],["bái","tóu","sāo","gèng","duǎn",""],["hún","yù","bù","shèng","zān",""]]},{"t":"山行","a":"杜牧","d":"唐","lv":"小学","g":"三年级上","lines":["远上寒山石径斜，","白云生处有人家。","停车坐爱枫林晚，","霜叶红于二月花。"],"tr":["沿着石头小路向深秋的山上走，路弯弯曲曲，","白云升起的地方还住着人家。","停下车来，只因喜爱傍晚的枫林，","经霜的枫叶比二月的春花还要红。"],"note":"寒山：深秋的山。石径：石头小路。斜：倾斜、弯曲。坐：因为。霜叶：经霜的枫叶。","intro":"杜牧（803—852），唐代诗人，与李商隐并称'小李杜'。此诗写秋山枫叶之美。","id":15,"py":[["yuǎn","shàng","hán","shān","shí","jìng","xié",""],["bái","yún","shēng","chù","yǒu","rén","jiā",""],["tíng","chē","zuò","ài","fēng","lín","wǎn",""],["shuāng","yè","hóng","yú","èr","yuè","huā",""]]},{"t":"江南春","a":"杜牧","d":"唐","lv":"小学","g":"六年级上","lines":["千里莺啼绿映红，","水村山郭酒旗风。","南朝四百八十寺，","多少楼台烟雨中。"],"tr":["千里江南，黄莺啼叫，绿叶映着红花，","临水村庄、依山城郭，酒旗迎风招展。","南朝留下的四百八十座寺庙，","有多少楼台笼在蒙蒙烟雨之中。"],"note":"山郭：依山的城郭。酒旗：酒家的招子。南朝：宋齐梁陈四朝。楼台：寺庙建筑。","intro":"写江南春景，前两句明丽，后两句转入怀古与慨叹。","id":16,"py":[["qiān","lǐ","yīng","tí","lǜ","yìng","hóng",""],["shuǐ","cūn","shān","guō","jiǔ","qí","fēng",""],["nán","cháo","sì","bǎi","bā","shí","sì",""],["duō","shǎo","lóu","tái","yān","yǔ","zhōng",""]]},{"t":"清明","a":"杜牧","d":"唐","lv":"小学","g":"三年级下","lines":["清明时节雨纷纷，","路上行人欲断魂。","借问酒家何处有？","牧童遥指杏花村。"],"tr":["清明时节细雨纷纷飘洒，","路上赶路的人愁绪满怀、心神黯淡。","问一声哪里有酒家可以歇脚，","牧童远远指向杏花深处的村庄。"],"note":"清明：二十四节气之一，有扫墓习俗。断魂：形容悲伤愁苦。借问：请问。","intro":"写清明行旅之人的愁绪，末句以牧童一指收尾，画面感极强。","id":17,"py":[["qīng","míng","shí","jié","yǔ","fēn","fēn",""],["lù","shàng","xíng","rén","yù","duàn","hún",""],["jiè","wèn","jiǔ","jiā","hé","chù","yǒu",""],["mù","tóng","yáo","zhǐ","xìng","huā","cūn",""]]},{"t":"赤壁","a":"杜牧","d":"唐","lv":"初中","g":"八年级上","lines":["折戟沉沙铁未销，","自将磨洗认前朝。","东风不与周郎便，","铜雀春深锁二乔。"],"tr":["一支折断的铁戟沉在沙里，还没有锈蚀尽，","我把它拿来磨洗，认出是前朝之物。","如果当年东风没有给周瑜方便，","二乔恐怕就要被深锁在曹操的铜雀台里了。"],"note":"折戟：折断的兵器。销：锈蚀。周郎：周瑜。铜雀：曹操所建铜雀台。二乔：孙策、周瑜之妻。","intro":"借赤壁古战场遗物发议论，指出赤壁之胜有偶然因素，见地独到。","id":18,"py":[["zhé","jǐ","chén","shā","tiě","wèi","xiāo",""],["zì","jiāng","mó","xǐ","rèn","qián","cháo",""],["dōng","fēng","bù","yǔ","zhōu","láng","biàn",""],["tóng","què","chūn","shēn","suǒ","èr","qiáo",""]]},{"t":"泊秦淮","a":"杜牧","d":"唐","lv":"初中","g":"七年级下","lines":["烟笼寒水月笼沙，","夜泊秦淮近酒家。","商女不知亡国恨，","隔江犹唱后庭花。"],"tr":["烟雾笼罩着寒冷的水面，月光笼着沙岸，","夜里船停泊在秦淮河畔，靠近酒家。","卖唱的女子不懂得亡国的悲恨，","隔着江还在唱那支《后庭花》。"],"note":"秦淮：秦淮河，流经南京。商女：卖唱的歌女。后庭花：《玉树后庭花》，被视为亡国之音。","intro":"晚唐国势衰微，诗人夜泊秦淮，借歌女唱亡国之音讽刺当权者醉生梦死。","id":19,"py":[["yān","lóng","hán","shuǐ","yuè","lóng","shā",""],["yè","pō","qín","huái","jìn","jiǔ","jiā",""],["shāng","nǚ","bù","zhī","wáng","guó","hèn",""],["gé","jiāng","yóu","chàng","hòu","tíng","huā",""]]},{"t":"九月九日忆山东兄弟","a":"王维","d":"唐","lv":"小学","g":"三年级上","lines":["独在异乡为异客，","每逢佳节倍思亲。","遥知兄弟登高处，","遍插茱萸少一人。"],"tr":["独自在他乡做客，","每到佳节就更加思念亲人。","远远想到兄弟们登高的地方，","人人都插上茱萸，却少了我一个。"],"note":"九月九日：重阳节。山东：华山以东，指诗人家乡蒲州。茱萸：一种有浓香的植物，重阳插戴。","intro":"王维（701—761），唐代诗人、画家，苏轼评其'诗中有画，画中有诗'。此诗作于他十七岁客居长安时。","id":20,"py":[["dú","zài","yì","xiāng","wéi","yì","kè",""],["měi","féng","jiā","jié","bèi","sī","qīn",""],["yáo","zhī","xiōng","dì","dēng","gāo","chù",""],["biàn","chā","zhū","yú","shǎo","yī","rén",""]]},{"t":"送元二使安西","a":"王维","d":"唐","lv":"小学","g":"四年级上","lines":["渭城朝雨浥轻尘，","客舍青青柳色新。","劝君更尽一杯酒，","西出阳关无故人。"],"tr":["渭城清晨的小雨湿润了地上的轻尘，","旅舍旁柳色青青，分外清新。","请你再干一杯酒吧，","向西出了阳关，就再没有老朋友了。"],"note":"元二：友人。使：出使。浥：湿润。阳关：在今甘肃敦煌西南。","intro":"唐代送别名篇，后两句被谱入乐府，称《渭城曲》或《阳关三叠》。","id":21,"py":[["wèi","chéng","zhāo","yǔ","yì","qīng","chén",""],["kè","shè","qīng","qīng","liǔ","sè","xīn",""],["quàn","jūn","gèng","jìn","yī","bēi","jiǔ",""],["xī","chū","yáng","guān","wú","gù","rén",""]]},{"t":"使至塞上","a":"王维","d":"唐","lv":"初中","g":"八年级上","lines":["单车欲问边，","属国过居延。","征蓬出汉塞，","归雁入胡天。","大漠孤烟直，","长河落日圆。","萧关逢候骑，","都护在燕然。"],"tr":["轻车简从要去慰问边关，","我以使者身份经过居延。","像随风飘飞的蓬草出了汉家边塞，","像北归的大雁进入胡地天空。","浩瀚沙漠中一缕孤烟笔直上升，","黄河尽头一轮落日浑圆。","到萧关遇上侦察骑兵，","说都护正在燕然前线。"],"note":"单车：一辆车，形容轻车简从。征蓬：飘飞的蓬草。候骑：侦察骑兵。燕然：山名，代指前线。","intro":"737 年王维奉命出塞慰问边关将士所作，'大漠孤烟直，长河落日圆'被誉为千古名句。","id":22,"py":[["dān","chē","yù","wèn","biān",""],["shǔ","guó","guò","jū","yán",""],["zhēng","péng","chū","hàn","sài",""],["guī","yàn","rù","hú","tiān",""],["dà","mò","gū","yān","zhí",""],["cháng","hé","luò","rì","yuán",""],["xiāo","guān","féng","hòu","jì",""],["dū","hù","zài","yān","rán",""]]},{"t":"赋得古原草送别（节选）","a":"白居易","d":"唐","lv":"小学","g":"二年级下","lines":["离离原上草，","一岁一枯荣。","野火烧不尽，","春风吹又生。"],"tr":["古原上的草长得茂盛繁密，","一年一度枯萎又繁荣。","野火怎么烧也烧不尽，","春风一吹，它又蓬勃生长。"],"note":"赋得：借古人诗句命题作诗。离离：茂盛的样子。枯荣：枯萎和茂盛。","intro":"白居易（772—846），字乐天，唐代诗人，主张'文章合为时而著'。此诗是他十六岁应考习作。","id":23,"py":[["lí","lí","yuán","shàng","cǎo",""],["yī","suì","yī","kū","róng",""],["yě","huǒ","shāo","bù","jìn",""],["chūn","fēng","chuī","yòu","shēng",""]]},{"t":"池上","a":"白居易","d":"唐","lv":"小学","g":"四年级下","lines":["小娃撑小艇，","偷采白莲回。","不解藏踪迹，","浮萍一道开。"],"tr":["一个小孩子撑着小船，","偷偷采了白莲回来。","他不懂得掩盖行踪，","水面的浮萍被划开一道清晰的水路。"],"note":"小娃：小孩。艇：小船。不解：不懂得。踪迹：行动留下的痕迹。","intro":"五言绝句，写小童偷采白莲的天真可爱。","id":24,"py":[["xiǎo","wá","chēng","xiǎo","tǐng",""],["tōu","cǎi","bái","lián","huí",""],["bù","jiě","cáng","zōng","jì",""],["fú","píng","yī","dào","kāi",""]]},{"t":"忆江南","a":"白居易","d":"唐","lv":"小学","g":"三年级下","lines":["江南好，","风景旧曾谙。","日出江花红胜火，","春来江水绿如蓝。","能不忆江南？"],"tr":["江南真好，","那里的风景我从前就熟悉。","太阳出来时，江边的花比火还红，","春天到来，江水绿得像蓝草染的一样。","怎么能不怀念江南呢？"],"note":"谙：熟悉。胜：超过。蓝：蓝草，可制青绿染料。","intro":"词牌名，白居易晚年回忆在杭州、苏州任职时所见的江南春色。","id":25,"py":[["jiāng","nán","hǎo",""],["fēng","jǐng","jiù","céng","ān",""],["rì","chū","jiāng","huā","hóng","shèng","huǒ",""],["chūn","lái","jiāng","shuǐ","lǜ","rú","lán",""],["néng","bù","yì","jiāng","nán",""]]},{"t":"钱塘湖春行","a":"白居易","d":"唐","lv":"初中","g":"八年级上","lines":["孤山寺北贾亭西，","水面初平云脚低。","几处早莺争暖树，","谁家新燕啄春泥。","乱花渐欲迷人眼，","浅草才能没马蹄。","最爱湖东行不足，","绿杨阴里白沙堤。"],"tr":["从孤山寺北面走到贾公亭西边，","湖面刚刚与堤岸齐平，云气低垂贴近水面。","几处早来的黄莺争着飞向向阳的树，","谁家新归的燕子啄着春泥筑巢。","繁花渐渐要看花人的眼，","浅浅的春草刚刚能没过马蹄。","最爱湖东的景色，怎么走都走不够，","绿杨树荫里有那道白沙堤。"],"note":"孤山寺、贾亭、白沙堤：均在杭州西湖。云脚低：云气低垂。行不足：游赏不够。","intro":"写西湖早春，处处扣住'早'字，是白居易任杭州刺史时所作。","id":26,"py":[["gū","shān","sì","běi","jiǎ","tíng","xī",""],["shuǐ","miàn","chū","píng","yún","jiǎo","dī",""],["jǐ","chù","zǎo","yīng","zhēng","nuǎn","shù",""],["shuí","jiā","xīn","yàn","zhuó","chūn","ní",""],["luàn","huā","jiàn","yù","mí","rén","yǎn",""],["qiǎn","cǎo","cái","néng","mò","mǎ","tí",""],["zuì","ài","hú","dōng","xíng","bù","zú",""],["lǜ","yáng","yīn","lǐ","bái","shā","dī",""]]},{"t":"小池","a":"杨万里","d":"宋","lv":"小学","g":"一年级下","lines":["泉眼无声惜细流，","树阴照水爱晴柔。","小荷才露尖尖角，","早有蜻蜓立上头。"],"tr":["泉眼悄然无声，像是舍不得那细细的水流，","树荫映在水面，像是喜爱这晴柔的风光。","小荷刚露出尖尖的叶角，","早有一只蜻蜓立在上面了。"],"note":"泉眼：泉水的出口。惜：爱惜。晴柔：晴天柔和的风光。","intro":"杨万里（1127—1206），南宋诗人，诗风清新活泼，人称'诚斋体'。","id":27,"py":[["quán","yǎn","wú","shēng","xī","xì","liú",""],["shù","yīn","zhào","shuǐ","ài","qíng","róu",""],["xiǎo","hé","cái","lù","jiān","jiān","jiǎo",""],["zǎo","yǒu","qīng","tíng","lì","shàng","tou",""]]},{"t":"晓出净慈寺送林子方","a":"杨万里","d":"宋","lv":"小学","g":"二年级下","lines":["毕竟西湖六月中，","风光不与四时同。","接天莲叶无穷碧，","映日荷花别样红。"],"tr":["到底是六月的西湖，","风光和其他季节都不一样。","荷叶连到天边，无边无际的碧绿，","荷花映着朝阳，红得格外不同。"],"note":"晓出：早晨走出。净慈寺：杭州西湖南岸的寺庙。四时：四季。别样：特别、不同一般。","intro":"送别友人林子方时写西湖六月荷花，写景胜于写别情。","id":28,"py":[["bì","jìng","xī","hú","liù","yuè","zhōng",""],["fēng","guāng","bù","yǔ","sì","shí","tóng",""],["jiē","tiān","lián","yè","wú","qióng","bì",""],["yìng","rì","hé","huā","bié","yàng","hóng",""]]},{"t":"宿新市徐公店","a":"杨万里","d":"宋","lv":"小学","g":"四年级下","lines":["篱落疏疏一径深，","树头新绿未成阴。","儿童急走追黄蝶，","飞入菜花无处寻。"],"tr":["篱笆稀疏，一条小路伸向远处，","树梢刚长出的新叶还没有形成浓荫。","孩子们飞快地跑着追黄蝴蝶，","蝴蝶飞进菜花丛里，再也找不到了。"],"note":"篱落：篱笆。疏疏：稀疏。径：小路。急走：快跑。","intro":"写乡村春末的童趣，黄蝶与菜花同色，妙在'无处寻'三字。","id":29,"py":[["lí","luò","shū","shū","yī","jìng","shēn",""],["shù","tóu","xīn","lǜ","wèi","chéng","yīn",""],["ér","tóng","jí","zǒu","zhuī","huáng","dié",""],["fēi","rù","cài","huā","wú","chù","xún",""]]},{"t":"村居","a":"高鼎","d":"清","lv":"小学","g":"二年级下","lines":["草长莺飞二月天，","拂堤杨柳醉春烟。","儿童散学归来早，","忙趁东风放纸鸢。"],"tr":["二月里青草生长、黄莺飞舞，","杨柳枝条轻拂堤岸，像醉在春日的烟雾里。","孩子们放学回来得早，","急忙趁着东风去放风筝。"],"note":"村居：住在乡村。拂堤：轻拂堤岸。春烟：春日水边雾霭。纸鸢：风筝。","intro":"高鼎（生卒年不详），清代诗人。此诗写早春二月乡村的生机。","id":30,"py":[["cǎo","zhǎng","yīng","fēi","èr","yuè","tiān",""],["fú","dī","yáng","liǔ","zuì","chūn","yān",""],["ér","tóng","sàn","xué","guī","lái","zǎo",""],["máng","chèn","dōng","fēng","fàng","zhǐ","yuān",""]]},{"t":"咏柳","a":"贺知章","d":"唐","lv":"小学","g":"三年级下","lines":["碧玉妆成一树高，","万条垂下绿丝绦。","不知细叶谁裁出，","二月春风似剪刀。"],"tr":["高高的柳树像是用碧玉装扮而成，","千万条柳枝垂下来，如同绿色的丝带。","不知道这细嫩的柳叶是谁裁出来的，","原来二月的春风就像一把剪刀。"],"note":"碧玉：青绿色的玉。妆：装扮。丝绦：丝织的带子。裁：剪裁。","intro":"贺知章（659—约744），唐代诗人，与张若虚等并称'吴中四士'。","id":31,"py":[["bì","yù","zhuāng","chéng","yī","shù","gāo",""],["wàn","tiáo","chuí","xià","lǜ","sī","tāo",""],["bù","zhī","xì","yè","shuí","cái","chū",""],["èr","yuè","chūn","fēng","shì","jiǎn","dāo",""]]},{"t":"回乡偶书","a":"贺知章","d":"唐","lv":"小学","g":"二年级上","lines":["少小离家老大回，","乡音无改鬓毛衰。","儿童相见不相识，","笑问客从何处来。"],"tr":["年少时离开家乡，年老才回来，","家乡话没有变，两鬓的头发却已稀疏斑白。","村里的孩子见了我都不认识，","笑着问：这位客人是从哪里来的？"],"note":"偶书：随意写下。乡音：家乡口音。鬓毛衰：鬓发稀疏变白。相识：认识。","intro":"写于诗人八十六岁辞官返乡时，以儿童一问写尽久客伤老的感慨。","id":32,"py":[["shào","xiǎo","lí","jiā","lǎo","dà","huí",""],["xiāng","yīn","wú","gǎi","bìn","máo","cuī",""],["ér","tóng","xiāng","jiàn","bù","xiāng","shí",""],["xiào","wèn","kè","cóng","hé","chù","lái",""]]},{"t":"春日","a":"朱熹","d":"宋","lv":"小学","g":"三年级下","lines":["胜日寻芳泗水滨，","无边光景一时新。","等闲识得东风面，","万紫千红总是春。"],"tr":["风和日丽的日子到泗水边游春，","无边无际的风光一下子都变得焕然一新。","随处都能认出春风的面貌，","百花万紫千红，到处都是春天。"],"note":"胜日：天气晴好的日子。寻芳：游春看花。等闲：寻常、随便。东风：春风。","intro":"朱熹（1130—1200），南宋理学家。此诗表面写游春，也被认为暗喻求道。","id":33,"py":[["shèng","rì","xún","fāng","sì","shuǐ","bīn",""],["wú","biān","guāng","jǐng","yī","shí","xīn",""],["děng","xián","shí","dé","dōng","fēng","miàn",""],["wàn","zǐ","qiān","hóng","zǒng","shì","chūn",""]]},{"t":"观书有感","a":"朱熹","d":"宋","lv":"小学","g":"五年级上","lines":["半亩方塘一鉴开，","天光云影共徘徊。","问渠那得清如许？","为有源头活水来。"],"tr":["半亩大的方形池塘像一面镜子打开，","天光和云影在其中来回晃动。","要问它为什么能这样清澈，","是因为有活水从源头不断流来。"],"note":"鉴：镜子。徘徊：来回移动。渠：它，指方塘。如许：像这样。为：因为。","intro":"借池塘清澈喻读书求知，说明只有不断汲取新知，心境才能明澈。","id":34,"py":[["bàn","mǔ","fāng","táng","yī","jiàn","kāi",""],["tiān","guāng","yún","yǐng","gòng","pái","huái",""],["wèn","qú","nǎ","dé","qīng","rú","xǔ",""],["wèi","yǒu","yuán","tóu","huó","shuǐ","lái",""]]},{"t":"题西林壁","a":"苏轼","d":"宋","lv":"小学","g":"四年级上","lines":["横看成岭侧成峰，","远近高低各不同。","不识庐山真面目，","只缘身在此山中。"],"tr":["从正面横看是连绵山岭，从侧面看是耸立山峰，","远近高低各个角度看，样子都不同。","之所以认不清庐山的真实面目，","只因为自己身处这座山中。"],"note":"西林：西林寺。缘：因为。真面目：指庐山真实的全貌。","intro":"苏轼（1037—1101），字子瞻，号东坡居士，北宋文学家。此诗题于西林寺墙壁，由写景入哲理。","id":35,"py":[["héng","kàn","chéng","lǐng","cè","chéng","fēng",""],["yuǎn","jìn","gāo","dī","gè","bù","tóng",""],["bù","shí","lú","shān","zhēn","miàn","mù",""],["zhǐ","yuán","shēn","zài","cǐ","shān","zhōng",""]]},{"t":"饮湖上初晴后雨","a":"苏轼","d":"宋","lv":"小学","g":"三年级上","lines":["水光潋滟晴方好，","山色空蒙雨亦奇。","欲把西湖比西子，","淡妆浓抹总相宜。"],"tr":["晴天里湖水波光闪动，正是最美的时候，","雨中山色迷蒙，也另有一番奇妙。","若把西湖比作美人西施，","淡妆也好，浓妆也好，都恰到好处。"],"note":"潋滟：水波闪动的样子。空蒙：细雨迷茫。西子：西施。相宜：合适。","intro":"写西湖晴雨皆美，'西子湖'之称即由此而来。","id":36,"py":[["shuǐ","guāng","liàn","yàn","qíng","fāng","hǎo",""],["shān","sè","kōng","méng","yǔ","yì","qí",""],["yù","bǎ","xī","hú","bǐ","xī","zi",""],["dàn","zhuāng","nóng","mǒ","zǒng","xiāng","yí",""]]},{"t":"六月二十七日望湖楼醉书","a":"苏轼","d":"宋","lv":"小学","g":"六年级上","lines":["黑云翻墨未遮山，","白雨跳珠乱入船。","卷地风来忽吹散，","望湖楼下水如天。"],"tr":["乌云翻滚像泼洒的墨汁，还没有遮住山头，","白色的雨点像跳动的珍珠，乱纷纷打进船里。","一阵卷地大风忽然把云雨吹散，","望湖楼下的水面平静得像一片蓝天。"],"note":"翻墨：打翻的墨汁，形容乌云。白雨：暴雨。跳珠：跳动的珍珠，形容雨点。卷地风：贴地卷来的大风。","intro":"写夏日西湖骤雨初起的全过程，四句四个画面，节奏极快。","id":37,"py":[["hēi","yún","fān","mò","wèi","zhē","shān",""],["bái","yǔ","tiào","zhū","luàn","rù","chuán",""],["juǎn","dì","fēng","lái","hū","chuī","sàn",""],["wàng","hú","lóu","xià","shuǐ","rú","tiān",""]]},{"t":"惠崇春江晚景","a":"苏轼","d":"宋","lv":"小学","g":"三年级下","lines":["竹外桃花三两枝，","春江水暖鸭先知。","蒌蒿满地芦芽短，","正是河豚欲上时。"],"tr":["竹林外开着两三枝桃花，","春江水暖，鸭子最先知道。","蒌蒿长得满地都是，芦苇刚抽出短芽，","这正是河豚将要逆流而上的时候。"],"note":"惠崇：北宋僧人、画家。蒌蒿：一种水草。芦芽：芦苇的嫩芽。河豚：鱼名，味美。","intro":"为惠崇所画《春江晚景》题诗，由画面生发出'鸭先知'的理趣。","id":38,"py":[["zhú","wài","táo","huā","sān","liǎng","zhī",""],["chūn","jiāng","shuǐ","nuǎn","yā","xiān","zhī",""],["lóu","hāo","mǎn","dì","lú","yá","duǎn",""],["zhèng","shì","hé","tún","yù","shàng","shí",""]]},{"t":"水调歌头·明月几时有","a":"苏轼","d":"宋","lv":"初中","g":"九年级上","lines":["明月几时有？","把酒问青天。","不知天上宫阙，今夕是何年。","我欲乘风归去，又恐琼楼玉宇，高处不胜寒。","起舞弄清影，何似在人间。","转朱阁，低绮户，照无眠。","不应有恨，何事长向别时圆？","人有悲欢离合，月有阴晴圆缺，此事古难全。","但愿人长久，千里共婵娟。"],"tr":["明月从什么时候开始有的？","我端起酒杯询问青天。","不知道天上的宫殿，今晚是哪一年。","我想乘风回到天上去，又怕那美玉砌成的楼宇，太高处太寒冷。","不如在月下起舞，与自己的影子相伴，哪里比得上人间呢。","月光转过朱红楼阁，低低照进雕花窗户，照着不能入睡的人。","月亮该是对人没有怨恨吧，为什么总在人们离别时才圆呢？","人有悲欢离合，月有阴晴圆缺，这种事自古就难以周全。","只愿亲人长久平安，即使相隔千里，也能共赏这一轮明月。"],"note":"把酒：端起酒杯。宫阙：宫殿。琼楼玉宇：美玉砌成的楼宇。绮户：雕花的窗户。婵娟：指月亮。","intro":"1076 年中秋苏轼在密州所作，怀念弟弟苏辙，是中秋词中的绝唱。","id":39,"py":[["míng","yuè","jǐ","shí","yǒu",""],["bǎ","jiǔ","wèn","qīng","tiān",""],["bù","zhī","tiān","shàng","gōng","què","","jīn","xī","shì","hé","nián",""],["wǒ","yù","chéng","fēng","guī","qù","","yòu","kǒng","qióng","lóu","yù","yǔ","","gāo","chù","bù","shèng","hán",""],["qǐ","wǔ","nòng","qīng","yǐng","","hé","shì","zài","rén","jiān",""],["zhuǎn","zhū","gé","","dī","qǐ","hù","","zhào","wú","mián",""],["bù","yīng","yǒu","hèn","","hé","shì","cháng","xiàng","bié","shí","yuán",""],["rén","yǒu","bēi","huān","lí","hé","","yuè","yǒu","yīn","qíng","yuán","quē","","cǐ","shì","gǔ","nán","quán",""],["dàn","yuàn","rén","cháng","jiǔ","","qiān","lǐ","gòng","chán","juān",""]]},{"t":"元日","a":"王安石","d":"宋","lv":"小学","g":"三年级下","lines":["爆竹声中一岁除，","春风送暖入屠苏。","千门万户曈曈日，","总把新桃换旧符。"],"tr":["在爆竹声中一年过去了，","春风送暖，人们畅饮屠苏酒。","初升的太阳照亮千家万户，","家家都把旧桃符换成新的。"],"note":"元日：农历正月初一。屠苏：一种酒。曈曈：日出时光亮的样子。桃符：门上挂的辟邪木牌，即春联前身。","intro":"王安石（1021—1086），北宋政治家、文学家。此诗写春节景象，也寄托变法图新的信心。","id":40,"py":[["bào","zhú","shēng","zhōng","yī","suì","chú",""],["chūn","fēng","sòng","nuǎn","rù","tú","sū",""],["qiān","mén","wàn","hù","tóng","tóng","rì",""],["zǒng","bǎ","xīn","táo","huàn","jiù","fú",""]]},{"t":"泊船瓜洲","a":"王安石","d":"宋","lv":"小学","g":"六年级下","lines":["京口瓜洲一水间，","钟山只隔数重山。","春风又绿江南岸，","明月何时照我还？"],"tr":["京口和瓜洲之间只隔着一条江，","钟山离这里也只隔几重山。","春风又吹绿了长江南岸，","明月啊，什么时候才能照着我回家？"],"note":"瓜洲：在今江苏扬州南。京口：今江苏镇江。钟山：在今南京，作者家居于此。数重山：几层山。","intro":"写于诗人二次拜相赴京途中，'绿'字作动词，是炼字名例。","id":41,"py":[["jīng","kǒu","guā","zhōu","yī","shuǐ","jiàn",""],["zhōng","shān","zhǐ","gé","shù","chóng","shān",""],["chūn","fēng","yòu","lǜ","jiāng","nán","àn",""],["míng","yuè","hé","shí","zhào","wǒ","huán",""]]},{"t":"梅花","a":"王安石","d":"宋","lv":"小学","g":"二年级上","lines":["墙角数枝梅，","凌寒独自开。","遥知不是雪，","为有暗香来。"],"tr":["墙角有几枝梅花，","冒着严寒独自开放。","远远就知道那不是雪，","因为有淡淡的香气飘过来。"],"note":"凌寒：冒着严寒。遥知：远远地知道。为：因为。暗香：幽微的香气。","intro":"借梅花凌寒独开，写不畏艰难、孤高自守的品格。","id":42,"py":[["qiáng","jiǎo","shù","zhī","méi",""],["líng","hán","dú","zì","kāi",""],["yáo","zhī","bú","shì","xuě",""],["wèi","yǒu","àn","xiāng","lái",""]]},{"t":"登飞来峰","a":"王安石","d":"宋","lv":"初中","g":"七年级下","lines":["飞来山上千寻塔，","闻说鸡鸣见日升。","不畏浮云遮望眼，","只缘身在最高层。"],"tr":["飞来峰上有一座高耸的宝塔，","听说鸡鸣时分在这里能看见日出。","不怕浮云遮住远望的视线，","只因为自己站在最高的一层。"],"note":"千寻：形容极高。寻，古代长度单位。闻说：听说。缘：因为。","intro":"写登高望远之理，'不畏浮云遮望眼'常被用来表达政治上的坚定。","id":43,"py":[["fēi","lái","shān","shàng","qiān","xún","tǎ",""],["wén","shuō","jī","míng","jiàn","rì","shēng",""],["bù","wèi","fú","yún","zhē","wàng","yǎn",""],["zhǐ","yuán","shēn","zài","zuì","gāo","céng",""]]},{"t":"示儿","a":"陆游","d":"宋","lv":"小学","g":"五年级上","lines":["死去元知万事空，","但悲不见九州同。","王师北定中原日，","家祭无忘告乃翁。"],"tr":["本来就知道人死后万事皆空，","只是悲伤没能看到国家统一。","等到朝廷军队北上平定中原的那一天，","家祭时别忘了告诉你们的父亲。"],"note":"示儿：写给儿子们看。元知：本来就知道。九州同：国家统一。乃翁：你们的父亲。","intro":"陆游（1125—1210），南宋爱国诗人。这是他临终绝笔，至死不忘收复中原。","id":44,"py":[["sǐ","qù","yuán","zhī","wàn","shì","kōng",""],["dàn","bēi","bú","jiàn","jiǔ","zhōu","tóng",""],["wáng","shī","běi","dìng","zhōng","yuán","rì",""],["jiā","jì","wú","wàng","gào","nǎi","wēng",""]]},{"t":"秋夜将晓出篱门迎凉有感","a":"陆游","d":"宋","lv":"小学","g":"五年级下","lines":["三万里河东入海，","五千仞岳上摩天。","遗民泪尽胡尘里，","南望王师又一年。"],"tr":["三万里长的黄河向东流入大海，","五千仞高的华山直插云天。","沦陷区的百姓在战乱中眼泪都流尽了，","向南盼望朝廷军队，又是一年过去了。"],"note":"三万里河：指黄河。五千仞岳：指华山。摩天：碰到天。遗民：沦陷区百姓。王师：朝廷军队。","intro":"写沦陷区百姓的期盼，前两句写山河壮阔，后两句转沉痛。","id":45,"py":[["sān","wàn","lǐ","hé","dōng","rù","hǎi",""],["wǔ","qiān","rèn","yuè","shàng","mó","tiān",""],["yí","mín","lèi","jǐn","hú","chén","lǐ",""],["nán","wàng","wáng","shī","yòu","yī","nián",""]]},{"t":"游山西村","a":"陆游","d":"宋","lv":"初中","g":"七年级下","lines":["莫笑农家腊酒浑，","丰年留客足鸡豚。","山重水复疑无路，","柳暗花明又一村。","箫鼓追随春社近，","衣冠简朴古风存。","从今若许闲乘月，","拄杖无时夜叩门。"],"tr":["不要笑话农家腊月酿的酒浑浊，","丰收之年待客的鸡肉猪肉都很丰足。","山峦重叠、溪水回环，正怀疑无路可走，","忽然柳荫深深、花色明艳，又出现一个村庄。","吹箫击鼓，春社的日子近了，","村民衣着朴素，保留着古老的风气。","今后如果允许我趁着月夜随时来访，","我会拄着拐杖在夜里敲你的门。"],"note":"腊酒：腊月酿的酒。豚：猪。春社：立春后的祭祀日。若许：如果允许。无时：没有定时、随时。","intro":"写乡村风光与民俗，'山重水复疑无路，柳暗花明又一村'成为绝境逢生的名句。","id":46,"py":[["mò","xiào","nóng","jiā","là","jiǔ","hún",""],["fēng","nián","liú","kè","zú","jī","tún",""],["shān","chóng","shuǐ","fù","yí","wú","lù",""],["liǔ","àn","huā","míng","yòu","yī","cūn",""],["xiāo","gǔ","zhuī","suí","chūn","shè","jìn",""],["yī","guān","jiǎn","piáo","gǔ","fēng","cún",""],["cóng","jīn","ruò","xǔ","xián","chéng","yuè",""],["zhǔ","zhàng","wú","shí","yè","kòu","mén",""]]},{"t":"题临安邸","a":"林升","d":"宋","lv":"小学","g":"五年级上","lines":["山外青山楼外楼，","西湖歌舞几时休？","暖风熏得游人醉，","直把杭州作汴州。"],"tr":["青山之外还有青山，楼阁之外还有楼阁，","西湖上的歌舞什么时候才能停歇？","暖洋洋的风把游人吹得像醉了一样，","竟把杭州当成了故都汴州。"],"note":"临安：南宋都城，今杭州。邸：客栈。熏：吹拂、陶醉。汴州：北宋都城开封。","intro":"林升，南宋诗人，生平不详。此诗讽刺南宋朝廷偏安享乐、不思收复失地。","id":47,"py":[["shān","wài","qīng","shān","lóu","wài","lóu",""],["xī","hú","gē","wǔ","jǐ","shí","xiū",""],["nuǎn","fēng","xūn","dé","yóu","rén","zuì",""],["zhí","bǎ","háng","zhōu","zuò","biàn","zhōu",""]]},{"t":"四时田园杂兴（昼出耘田）","a":"范成大","d":"宋","lv":"小学","g":"五年级下","lines":["昼出耘田夜绩麻，","村庄儿女各当家。","童孙未解供耕织，","也傍桑阴学种瓜。"],"tr":["白天到田里除草，夜里在家搓麻线，","村里的男男女女各人都担起家事。","小孩子还不懂耕地织布，","也在桑树荫下学着种瓜。"],"note":"耘田：除草。绩麻：把麻搓成线。当家：担当家务。未解：不懂得。供：从事。傍：靠近。","intro":"范成大（1126—1193），南宋诗人，晚年退居石湖，写《四时田园杂兴》六十首。","id":48,"py":[["zhòu","chū","yún","tián","yè","jì","má",""],["cūn","zhuāng","ér","nǚ","gè","dāng","jiā",""],["tóng","sūn","wèi","jiě","gōng","gēng","zhī",""],["yě","bàng","sāng","yīn","xué","zhòng","guā",""]]},{"t":"乡村四月","a":"翁卷","d":"宋","lv":"小学","g":"五年级下","lines":["绿遍山原白满川，","子规声里雨如烟。","乡村四月闲人少，","才了蚕桑又插田。"],"tr":["绿色铺满山野，水光映白河川，","杜鹃声里，细雨迷蒙如烟。","乡村四月很少有闲人，","刚忙完采桑养蚕，又要下田插秧。"],"note":"山原：山陵和原野。白满川：水光映照，河川泛白。子规：杜鹃鸟。了：结束。","intro":"翁卷，南宋'永嘉四灵'之一。此诗写江南四月农忙景象。","id":49,"py":[["lǜ","biàn","shān","yuán","bái","mǎn","chuān",""],["zǐ","guī","shēng","lǐ","yǔ","rú","yān",""],["xiāng","cūn","sì","yuè","xián","rén","shǎo",""],["cái","liǎo","cán","sāng","yòu","chā","tián",""]]},{"t":"游子吟","a":"孟郊","d":"唐","lv":"小学","g":"五年级下","lines":["慈母手中线，","游子身上衣。","临行密密缝，","意恐迟迟归。","谁言寸草心，","报得三春晖。"],"tr":["慈母手中拿着针线，","缝的是远行儿子身上的衣裳。","临出发前密密地缝了又缝，","心里怕的是孩子很久才回来。","谁说小草般微弱的孝心，","能报答得了春天阳光般的恩情。"],"note":"游子：离家远游的人。意恐：担心。寸草心：小草的嫩心，喻子女孝心。三春晖：春天的阳光，喻母爱。","intro":"孟郊（751—814），唐代诗人。此诗题下自注'迎母溧上作'，写母爱最为人称道。","id":50,"py":[["cí","mǔ","shǒu","zhōng","xiàn",""],["yóu","zi","shēn","shàng","yī",""],["lín","xíng","mì","mì","féng",""],["yì","kǒng","chí","chí","guī",""],["shuí","yán","cùn","cǎo","xīn",""],["bào","dé","sān","chūn","huī",""]]},{"t":"悯农（锄禾日当午）","a":"李绅","d":"唐","lv":"小学","g":"二年级上","lines":["锄禾日当午，","汗滴禾下土。","谁知盘中餐，","粒粒皆辛苦。"],"tr":["正午顶着烈日在田里锄草，","汗水一滴滴落在禾苗下的泥土里。","有谁知道盘子里的饭食，","每一粒都是这样辛苦得来的。"],"note":"悯：同情。锄禾：给禾苗松土除草。餐：饭食。皆：都。","intro":"李绅（772—846），唐代诗人，与元稹、白居易交好，是新乐府运动参与者。","id":51,"py":[["chú","hé","rì","dāng","wǔ",""],["hàn","dī","hé","xià","tǔ",""],["shuí","zhī","pán","zhōng","cān",""],["lì","lì","jiē","xīn","kǔ",""]]},{"t":"悯农（春种一粒粟）","a":"李绅","d":"唐","lv":"小学","g":"二年级上","lines":["春种一粒粟，","秋收万颗子。","四海无闲田，","农夫犹饿死。"],"tr":["春天种下一粒种子，","秋天可以收获万颗粮食。","天下没有一块荒着的田地，","可农夫还是被饿死。"],"note":"粟：谷子，泛指粮食。四海：天下。犹：仍然、还是。","intro":"与'锄禾日当午'同为《悯农》二首，此首对比更为强烈。","id":52,"py":[["chūn","zhòng","yī","lì","sù",""],["qiū","shōu","wàn","kē","zi",""],["sì","hǎi","wú","xián","tián",""],["nóng","fū","yóu","è","sǐ",""]]},{"t":"江雪","a":"柳宗元","d":"唐","lv":"小学","g":"二年级上","lines":["千山鸟飞绝，","万径人踪灭。","孤舟蓑笠翁，","独钓寒江雪。"],"tr":["所有的山上看不到一只飞鸟，","所有的路上都没有人的脚印。","只有一叶孤舟上披蓑衣戴斗笠的老翁，","独自在风雪寒江上垂钓。"],"note":"绝：尽，没有。万径：所有小路。人踪灭：人的踪迹消失。蓑笠：蓑衣和斗笠。","intro":"柳宗元（773—819），唐代文学家，'唐宋八大家'之一。此诗写于被贬永州时期，寄寓孤高不屈。","id":53,"py":[["qiān","shān","niǎo","fēi","jué",""],["wàn","jìng","rén","zōng","miè",""],["gū","zhōu","suō","lì","wēng",""],["dú","diào","hán","jiāng","xuě",""]]},{"t":"寻隐者不遇","a":"贾岛","d":"唐","lv":"小学","g":"一年级下","lines":["松下问童子，","言师采药去。","只在此山中，","云深不知处。"],"tr":["在松树下问小童，","他说师父采药去了。","人就在这座山里，","只是云雾太深，不知道具体在哪儿。"],"note":"童子：指隐者的弟子。言：说。处：地方。","intro":"贾岛（779—843），唐代诗人，以'推敲'故事闻名，诗风清苦。","id":54,"py":[["sōng","xià","wèn","tóng","zi",""],["yán","shī","cǎi","yào","qù",""],["zhǐ","zài","cǐ","shān","zhōng",""],["yún","shēn","bù","zhī","chù",""]]},{"t":"所见","a":"袁枚","d":"清","lv":"小学","g":"一年级下","lines":["牧童骑黄牛，","歌声振林樾。","意欲捕鸣蝉，","忽然闭口立。"],"tr":["牧童骑在黄牛背上，","响亮的歌声在树林里回荡。","他想要捕捉树上鸣叫的蝉，","忽然闭上嘴站住不动了。"],"note":"振：振荡、回荡。林樾：树林。意欲：想要。立：站着。","intro":"袁枚（1716—1798），清代诗人，主张'性灵说'。此诗写牧童的机灵活泼。","id":55,"py":[["mù","tóng","qí","huáng","niú",""],["gē","shēng","zhèn","lín","yuè",""],["yì","yù","bǔ","míng","chán",""],["hū","rán","bì","kǒu","lì",""]]},{"t":"敕勒歌","a":"北朝民歌","d":"南北朝","lv":"小学","g":"二年级上","lines":["敕勒川，阴山下。","天似穹庐，笼盖四野。","天苍苍，野茫茫，","风吹草低见牛羊。"],"tr":["敕勒川，就在阴山脚下。","天空像一顶巨大的圆顶帐篷，笼罩着四面八方的原野。","天空青苍苍，原野茫茫无边，","风吹过，草低下头去，露出成群的牛羊。"],"note":"敕勒川：敕勒族居住的平原，在今内蒙古一带。穹庐：游牧民族的圆顶帐篷。见：同'现'，露出。","intro":"北朝乐府民歌，描绘北方草原的辽阔壮美，原为鲜卑语，后译成汉语。","id":56,"py":[["chì","lēi","chuān","","yīn","shān","xià",""],["tiān","shì","qióng","lú","","lóng","gài","sì","yě",""],["tiān","cāng","cāng","","yě","máng","máng",""],["fēng","chuī","cǎo","dī","xiàn","niú","yáng",""]]},{"t":"长歌行（节选）","a":"汉乐府","d":"汉","lv":"小学","g":"六年级下","lines":["青青园中葵，朝露待日晞。","阳春布德泽，万物生光辉。","常恐秋节至，焜黄华叶衰。","百川东到海，何时复西归？","少壮不努力，老大徒伤悲。"],"tr":["园中葵菜青翠欲滴，叶上晨露等着太阳晒干。","温暖的春天散布恩泽，万物都焕发生机。","常担心秋天到来，花叶枯黄凋零。","百川都向东流入大海，什么时候才能再向西流回？","年轻力壮时不努力，年老时就只能白白伤悲。"],"note":"晞：晒干。布：散布。德泽：恩惠。焜黄：枯黄。徒：白白地。","intro":"汉乐府诗，末两句是最著名的劝学名句，从自然规律引出惜时之劝。","id":57,"py":[["qīng","qīng","yuán","zhōng","kuí","","zhāo","lù","dài","rì","xī",""],["yáng","chūn","bù","dé","zé","","wàn","wù","shēng","guāng","huī",""],["cháng","kǒng","qiū","jié","zhì","","kūn","huáng","huā","yè","cuī",""],["bǎi","chuān","dōng","dào","hǎi","","hé","shí","fù","xī","guī",""],["shào","zhuàng","bù","nǔ","lì","","lǎo","dà","tú","shāng","bēi",""]]},{"t":"望洞庭","a":"刘禹锡","d":"唐","lv":"小学","g":"三年级上","lines":["湖光秋月两相和，","潭面无风镜未磨。","遥望洞庭山水翠，","白银盘里一青螺。"],"tr":["湖面的波光与秋夜的月光互相交融，","水面平静无风，像一面未经打磨的铜镜。","远远望去，洞庭湖中的君山青翠玲珑，","就像白银盘里放着一枚青螺。"],"note":"相和：互相交融、和谐。镜未磨：形容水面朦胧如未经打磨的铜镜。青螺：喻指君山。","intro":"刘禹锡（772—842），唐代诗人，有'诗豪'之称。此诗写洞庭秋夜的朦胧美。","id":58,"py":[["hú","guāng","qiū","yuè","liǎng","xiāng","hé",""],["tán","miàn","wú","fēng","jìng","wèi","mó",""],["yáo","wàng","dòng","tíng","shān","shuǐ","cuì",""],["bái","yín","pán","lǐ","yī","qīng","luó",""]]},{"t":"浪淘沙（九曲黄河万里沙）","a":"刘禹锡","d":"唐","lv":"小学","g":"六年级上","lines":["九曲黄河万里沙，","浪淘风簸自天涯。","如今直上银河去，","同到牵牛织女家。"],"tr":["弯弯曲曲的黄河裹挟着万里泥沙，","风浪颠簸，来自遥远的天边。","如今顺着黄河直上天上的银河，","一同到牛郎织女的家去做客。"],"note":"九曲：形容黄河弯多。浪淘风簸：风浪冲激颠簸。天涯：天边。牵牛织女：牛郎星与织女星。","intro":"《浪淘沙》九首之一，前两句写黄河雄浑，后两句转入神话想象。","id":59,"py":[["jiǔ","qū","huáng","hé","wàn","lǐ","shā",""],["làng","táo","fēng","bǒ","zì","tiān","yá",""],["rú","jīn","zhí","shàng","yín","hé","qù",""],["tóng","dào","qiān","niú","zhī","nǚ","jiā",""]]},{"t":"竹石","a":"郑燮","d":"清","lv":"小学","g":"六年级下","lines":["咬定青山不放松，","立根原在破岩中。","千磨万击还坚劲，","任尔东西南北风。"],"tr":["竹子紧紧咬住青山不放松，","它的根原本就扎在破裂的岩石缝隙中。","经历千万次的折磨打击，依然坚韧挺拔，","任凭你东西南北哪个方向的风。"],"note":"咬定：比喻根扎得结实。立根：扎根。坚劲：坚韧强劲。任：任凭。尔：你。","intro":"郑燮（1693—1766），号板桥，清代书画家、诗人，'扬州八怪'之一，善画竹。此诗题于竹石画上。","id":60,"py":[["yǎo","dìng","qīng","shān","bù","fàng","sōng",""],["lì","gēn","yuán","zài","pò","yán","zhōng",""],["qiān","mó","wàn","jī","hái","jiān","jìng",""],["rèn","ěr","dōng","xī","nán","běi","fēng",""]]},{"t":"石灰吟","a":"于谦","d":"明","lv":"小学","g":"六年级下","lines":["千锤万凿出深山，","烈火焚烧若等闲。","粉骨碎身浑不怕，","要留清白在人间。"],"tr":["石灰经过千锤万凿才从深山里开采出来，","烈火焚烧对它来说如同平常事。","即使粉身碎骨也全然不怕，","只要把清白留在人世间。"],"note":"等闲：平常。浑：全、都。清白：既指石灰的洁白，也指人的品格。","intro":"于谦（1398—1457），明代政治家、军事家。此诗借石灰明志，与他一生刚正相合。","id":61,"py":[["qiān","chuí","wàn","záo","chū","shēn","shān",""],["liè","huǒ","fén","shāo","ruò","děng","xián",""],["fěn","gǔ","suì","shēn","hún","bù","pà",""],["yào","liú","qīng","bái","zài","rén","jiān",""]]},{"t":"己亥杂诗（九州生气恃风雷）","a":"龚自珍","d":"清","lv":"小学","g":"五年级上","lines":["九州生气恃风雷，","万马齐喑究可哀。","我劝天公重抖擞，","不拘一格降人才。"],"tr":["国家要有生机，必须依靠疾风迅雷般的变革，","万马沉默无声的局面终究令人悲哀。","我劝老天爷重新振作精神，","不要拘守一种规格，把人才降生到人间。"],"note":"九州：代指中国。恃：依靠。喑：沉默。究：终究。抖擞：振作。不拘一格：不限于一种规格。","intro":"龚自珍（1792—1841），清代思想家、诗人。此诗写于辞官南归途中，呼唤变革与人才。","id":62,"py":[["jiǔ","zhōu","shēng","qì","shì","fēng","léi",""],["wàn","mǎ","qí","yīn","jiū","kě","āi",""],["wǒ","quàn","tiān","gōng","chóng","dǒu","sǒu",""],["bù","jū","yī","gé","jiàng","rén","cái",""]]},{"t":"出塞（秦时明月汉时关）","a":"王昌龄","d":"唐","lv":"小学","g":"四年级上","lines":["秦时明月汉时关，","万里长征人未还。","但使龙城飞将在，","不教胡马度阴山。"],"tr":["依旧是秦汉时的明月，依旧是秦汉时的边关，","万里出征的将士还没有回来。","只要有像李广那样的名将在，","就不会让敌人的骑兵越过阴山。"],"note":"但使：只要。龙城飞将：指汉代名将李广。不教：不让。胡马：敌骑。阴山：在今内蒙古。","intro":"王昌龄（698—757），唐代边塞诗人，有'七绝圣手'之称。","id":63,"py":[["qín","shí","míng","yuè","hàn","shí","guān",""],["wàn","lǐ","cháng","zhēng","rén","wèi","huán",""],["dàn","shǐ","lóng","chéng","fēi","jiàng","zài",""],["bù","jiào","hú","mǎ","dù","yīn","shān",""]]},{"t":"芙蓉楼送辛渐","a":"王昌龄","d":"唐","lv":"小学","g":"四年级下","lines":["寒雨连江夜入吴，","平明送客楚山孤。","洛阳亲友如相问，","一片冰心在玉壶。"],"tr":["寒雨连夜洒遍吴地江天，","天亮时送别友人，只觉楚山格外孤寂。","洛阳的亲友如果问起我，","就说我的心依然像玉壶中的冰一样纯洁。"],"note":"芙蓉楼：在今江苏镇江。平明：天刚亮。冰心：纯洁的心。玉壶：玉制的壶。","intro":"送别友人辛渐，后两句以'冰心玉壶'自明操守。","id":64,"py":[["hán","yǔ","lián","jiāng","yè","rù","wú",""],["píng","míng","sòng","kè","chǔ","shān","gū",""],["luò","yáng","qīn","yǒu","rú","xiāng","wèn",""],["yī","piàn","bīng","xīn","zài","yù","hú",""]]},{"t":"凉州词（黄河远上白云间）","a":"王之涣","d":"唐","lv":"小学","g":"四年级上","lines":["黄河远上白云间，","一片孤城万仞山。","羌笛何须怨杨柳，","春风不度玉门关。"],"tr":["黄河远远地向上升，仿佛直入白云之间，","一座孤城立在万仞高山之中。","羌笛何必吹奏那哀怨的《折杨柳》呢，","春风本来就吹不到玉门关外。"],"note":"万仞：形容极高。羌笛：羌族吹奏的笛子。杨柳：指《折杨柳》曲。度：越过。玉门关：在今甘肃敦煌西北。","intro":"王之涣（688—742），唐代边塞诗人。此诗写边关荒寒与戍卒的乡思。","id":65,"py":[["huáng","hé","yuǎn","shàng","bái","yún","jiān",""],["yī","piàn","gū","chéng","wàn","rèn","shān",""],["qiāng","dí","hé","xū","yuàn","yáng","liǔ",""],["chūn","fēng","bù","dù","yù","mén","guān",""]]},{"t":"登鹳雀楼","a":"王之涣","d":"唐","lv":"小学","g":"二年级上","lines":["白日依山尽，","黄河入海流。","欲穷千里目，","更上一层楼。"],"tr":["太阳挨着山头慢慢落下，","黄河向着大海奔流。","想要看到千里之外的景色，","就要再上一层楼。"],"note":"鹳雀楼：旧址在今山西永济。依：靠着。尽：消失。穷：尽，看尽。","intro":"五言绝句名篇，前两句写景，后两句说理，气势与哲思兼备。","id":66,"py":[["bái","rì","yī","shān","jǐn",""],["huáng","hé","rù","hǎi","liú",""],["yù","qióng","qiān","lǐ","mù",""],["gèng","shàng","yī","céng","lóu",""]]},{"t":"塞下曲（月黑雁飞高）","a":"卢纶","d":"唐","lv":"小学","g":"四年级下","lines":["月黑雁飞高，","单于夜遁逃。","欲将轻骑逐，","大雪满弓刀。"],"tr":["夜色漆黑，大雁受惊飞得很高，","敌人的首领趁着黑夜逃跑。","正要率领轻骑兵去追击，","大雪已经落满了弓和刀。"],"note":"月黑：没有月光。单于：匈奴首领的称呼。遁逃：逃跑。将：率领。轻骑：轻装骑兵。逐：追赶。","intro":"卢纶（约739—约799），唐代'大历十才子'之一。此诗写边塞将士的英武。","id":67,"py":[["yuè","hēi","yàn","fēi","gāo",""],["chán","yú","yè","dùn","táo",""],["yù","jiāng","qīng","qí","zhú",""],["dà","xuě","mǎn","gōng","dāo",""]]},{"t":"蜂","a":"罗隐","d":"唐","lv":"小学","g":"三年级下","lines":["不论平地与山尖，","无限风光尽被占。","采得百花成蜜后，","为谁辛苦为谁甜？"],"tr":["不论是平地还是山峰，","凡是鲜花盛开的地方都被蜜蜂占了。","它采遍百花酿成蜂蜜之后，","究竟是为谁辛苦、为谁酿造甘甜呢？"],"note":"山尖：山峰。占：占据。为谁：替谁。","intro":"罗隐（833—909），唐代诗人。此诗借蜜蜂讽刺不劳而获者。","id":68,"py":[["bù","lùn","píng","dì","yǔ","shān","jiān",""],["wú","xiàn","fēng","guāng","jǐn","bèi","zhàn",""],["cǎi","dé","bǎi","huā","chéng","mì","hòu",""],["wèi","shuí","xīn","kǔ","wèi","shuí","tián",""]]},{"t":"村晚","a":"雷震","d":"宋","lv":"小学","g":"五年级下","lines":["草满池塘水满陂，","山衔落日浸寒漪。","牧童归去横牛背，","短笛无腔信口吹。"],"tr":["青草长满池塘，池水涨满岸坡，","山峦衔着落日，倒映在清冷的水波里。","牧童回家时横坐在牛背上，","随手吹着短笛，没有曲调。"],"note":"陂：池塘。衔：含着。漪：水波纹。横牛背：横坐在牛背上。无腔：没有固定曲调。信口：随口。","intro":"雷震，宋代诗人，生平不详。此诗写乡村傍晚牧童归家的闲适。","id":69,"py":[["cǎo","mǎn","chí","táng","shuǐ","mǎn","bēi",""],["shān","xián","luò","rì","jìn","hán","yī",""],["mù","tóng","guī","qù","héng","niú","bèi",""],["duǎn","dí","wú","qiāng","xìn","kǒu","chuī",""]]},{"t":"观沧海","a":"曹操","d":"汉","lv":"初中","g":"七年级上","lines":["东临碣石，以观沧海。","水何澹澹，山岛竦峙。","树木丛生，百草丰茂。","秋风萧瑟，洪波涌起。","日月之行，若出其中。","星汉灿烂，若出其里。","幸甚至哉，歌以咏志。"],"tr":["向东登上碣石山，来观看苍茫的大海。","海水多么动荡起伏，山岛高高地挺立。","岛上树木一丛丛生长，各种草长得很茂盛。","秋风吹过发出萧瑟的声音，海上涌起巨大的波浪。","太阳和月亮的运行，好像是从这大海里出来的。","银河星光灿烂，也好像从这大海里产生。","幸运得很，就用这首诗来抒发我的志向。"],"note":"碣石：山名，在今河北昌黎。澹澹：水波荡漾的样子。竦峙：高耸挺立。萧瑟：秋风吹树的声音。星汉：银河。幸甚至哉：乐府诗结尾套语。","intro":"曹操（155—220），东汉末年政治家、军事家、诗人。此诗写于北征乌桓途中，气魄雄浑。","id":70,"py":[["dōng","lín","jié","shí","","yǐ","guān","cāng","hǎi",""],["shuǐ","hé","dàn","dàn","","shān","dǎo","sǒng","zhì",""],["shù","mù","cóng","shēng","","bǎi","cǎo","fēng","mào",""],["qiū","fēng","xiāo","sè","","hóng","bō","yǒng","qǐ",""],["rì","yuè","zhī","xíng","","ruò","chū","qí","zhōng",""],["xīng","hàn","càn","làn","","ruò","chū","qí","lǐ",""],["xìng","shèn","zhì","zāi","","gē","yǐ","yǒng","zhì",""]]},{"t":"次北固山下","a":"王湾","d":"唐","lv":"初中","g":"七年级上","lines":["客路青山外，行舟绿水前。","潮平两岸阔，风正一帆悬。","海日生残夜，江春入旧年。","乡书何处达？归雁洛阳边。"],"tr":["旅人的路在青山之外延伸，船行进在碧绿的水面前方。","潮水涨满，两岸显得格外开阔，顺风中一片白帆高高悬挂。","夜色还没退尽，海上朝阳已经升起；旧年还没过完，江南已有春意。","家书怎样才能送到呢？请北归的大雁带到洛阳去吧。"],"note":"次：停宿。客路：旅途。风正：顺风。残夜：夜将尽时。乡书：家信。归雁：北归的大雁。","intro":"王湾，唐代诗人，洛阳人。此诗写舟行江南的羁旅之情，'海日生残夜'一联被称'诗人已来少有此句'。","id":71,"py":[["kè","lù","qīng","shān","wài","","xíng","zhōu","lǜ","shuǐ","qián",""],["cháo","píng","liǎng","àn","kuò","","fēng","zhèng","yī","fān","xuán",""],["hǎi","rì","shēng","cán","yè","","jiāng","chūn","rù","jiù","nián",""],["xiāng","shū","hé","chù","dá","","guī","yàn","luò","yáng","biān",""]]},{"t":"天净沙·秋思","a":"马致远","d":"元","lv":"初中","g":"七年级上","lines":["枯藤老树昏鸦，","小桥流水人家，","古道西风瘦马。","夕阳西下，","断肠人在天涯。"],"tr":["枯干的藤蔓缠着老树，黄昏的乌鸦停在枝上，","小桥下流水潺潺，旁边有几户人家，","古老驿道上，西风萧瑟，一匹瘦马缓缓前行。","夕阳已经向西沉落，","我这个断肠的游子还漂泊在天涯。"],"note":"散曲小令。昏鸦：黄昏时的乌鸦。古道：古老的驿道。断肠人：形容悲伤到极点的人。天涯：极远的地方。","intro":"马致远，元代散曲家，'元曲四大家'之一。这首小令被誉为'秋思之祖'。","id":72,"py":[["kū","téng","lǎo","shù","hūn","yā",""],["xiǎo","qiáo","liú","shuǐ","rén","jiā",""],["gǔ","dào","xī","fēng","shòu","mǎ",""],["xī","yáng","xī","xià",""],["duàn","cháng","rén","zài","tiān","yá",""]]},{"t":"闻王昌龄左迁龙标遥有此寄","a":"李白","d":"唐","lv":"初中","g":"七年级上","lines":["杨花落尽子规啼，","闻道龙标过五溪。","我寄愁心与明月，","随君直到夜郎西。"],"tr":["柳絮飘尽了，杜鹃鸟在啼叫，","听说你被贬为龙标尉，正要越过五溪。","我把这一腔愁思托付给明月，","让它陪着你一直走到夜郎以西。"],"note":"左迁：贬官。龙标：今湖南黔阳。五溪：湖南西部五条溪。夜郎：今湖南沅陵一带。","intro":"听说好友王昌龄被贬，李白写下此诗遥寄慰藉，'我寄愁心与明月'是寄情名句。","id":73,"py":[["yáng","huā","luò","jǐn","zǐ","guī","tí",""],["wén","dào","lóng","biāo","guò","wǔ","xī",""],["wǒ","jì","chóu","xīn","yǔ","míng","yuè",""],["suí","jūn","zhí","dào","yè","láng","xī",""]]},{"t":"行路难（其一）","a":"李白","d":"唐","lv":"初中","g":"九年级上","lines":["金樽清酒斗十千，玉盘珍羞直万钱。","停杯投箸不能食，拔剑四顾心茫然。","欲渡黄河冰塞川，将登太行雪满山。","闲来垂钓碧溪上，忽复乘舟梦日边。","行路难！行路难！多歧路，今安在？","长风破浪会有时，直挂云帆济沧海。"],"tr":["金杯里的清酒一斗值十千钱，玉盘中的珍馐价值万钱。","我放下酒杯、丢掉筷子吃不下，拔剑四顾，心中一片茫然。","想渡黄河，冰凌堵塞了河道；想登太行，大雪铺满了山岭。","闲时在碧溪垂钓，忽然又梦见乘船从太阳边经过。","行路难啊行路难！岔路这么多，如今我该往哪里走？","总有一天能乘长风破万里浪，直挂起云帆横渡苍茫大海。"],"note":"珍羞：珍奇菜肴，同'珍馐'。直：同'值'。箸：筷子。塞川：堵塞河道。垂钓碧溪：用姜太公渭水垂钓典。梦日边：用伊尹梦日典。济：渡过。","intro":"李白离开长安时所作，情绪从苦闷到昂扬，末两句最为人激赏。","id":74,"py":[["jīn","zūn","qīng","jiǔ","dǒu","shí","qiān","","yù","pán","zhēn","xiū","zhí","wàn","qián",""],["tíng","bēi","tóu","zhù","bù","néng","shí","","bá","jiàn","sì","gù","xīn","máng","rán",""],["yù","dù","huáng","hé","bīng","sāi","chuān","","jiāng","dēng","tài","háng","xuě","mǎn","shān",""],["xián","lái","chuí","diào","bì","xī","shàng","","hū","fù","chéng","zhōu","mèng","rì","biān",""],["xíng","lù","nán","","xíng","lù","nán","","duō","qí","lù","","jīn","ān","zài",""],["cháng","fēng","pò","làng","huì","yǒu","shí","","zhí","guà","yún","fān","jì","cāng","hǎi",""]]},{"t":"夜雨寄北","a":"李商隐","d":"唐","lv":"初中","g":"七年级上","lines":["君问归期未有期，","巴山夜雨涨秋池。","何当共剪西窗烛，","却话巴山夜雨时。"],"tr":["你问我回家的日子，我还没有定下日期，","此刻巴山夜雨绵绵，秋池的水都涨满了。","什么时候才能和你一起在西窗下剪烛夜谈，","再来回忆今天巴山夜雨时的思念。"],"note":"寄北：寄给北方的人。巴山：泛指巴蜀之地。何当：什么时候。却话：回头来说。","intro":"李商隐（约813—约858），唐代诗人，与杜牧并称'小李杜'。此诗时空回环，含蓄深婉。","id":75,"py":[["jūn","wèn","guī","qī","wèi","yǒu","qī",""],["bā","shān","yè","yǔ","zhǎng","qiū","chí",""],["hé","dāng","gòng","jiǎn","xī","chuāng","zhú",""],["què","huà","bā","shān","yè","yǔ","shí",""]]},{"t":"无题（相见时难别亦难）","a":"李商隐","d":"唐","lv":"初中","g":"九年级上","lines":["相见时难别亦难，东风无力百花残。","春蚕到死丝方尽，蜡炬成灰泪始干。","晓镜但愁云鬓改，夜吟应觉月光寒。","蓬山此去无多路，青鸟殷勤为探看。"],"tr":["相见本已难得，离别更让人难舍，何况东风无力、百花凋残。","春蚕直到死才把丝吐尽，蜡烛直到烧成灰泪水才干。","早晨照镜只愁鬓发变白，夜里吟诗应觉月光清寒。","蓬莱仙山离这里没有多远，希望青鸟殷勤地为我探看消息。"],"note":"丝：与'思'谐音。蜡炬：蜡烛。云鬓：形容女子鬓发。蓬山：蓬莱山，喻对方所在。青鸟：传说中传递音信的神鸟。","intro":"李商隐'无题'诗代表作，'春蚕到死丝方尽'写深情执着，被后人广泛引用。","id":76,"py":[["xiāng","jiàn","shí","nán","bié","yì","nán","","dōng","fēng","wú","lì","bǎi","huā","cán",""],["chūn","cán","dào","sǐ","sī","fāng","jìn","","là","jù","chéng","huī","lèi","shǐ","gān",""],["xiǎo","jìng","dàn","chóu","yún","bìn","gǎi","","yè","yín","yīng","jué","yuè","guāng","hán",""],["péng","shān","cǐ","qù","wú","duō","lù","","qīng","niǎo","yīn","qín","wèi","tàn","kàn",""]]},{"t":"雁门太守行","a":"李贺","d":"唐","lv":"初中","g":"八年级上","lines":["黑云压城城欲摧，甲光向日金鳞开。","角声满天秋色里，塞上燕脂凝夜紫。","半卷红旗临易水，霜重鼓寒声不起。","报君黄金台上意，提携玉龙为君死。"],"tr":["黑云压城，城池仿佛要被摧毁，铠甲映着日光像金色鱼鳞张开。","号角声回荡在满天秋色里，边塞的胭脂色血迹在夜里凝成暗紫。","半卷红旗，部队临近易水，秋霜浓重，战鼓声都沉了下去。","为了报答君王在黄金台上的知遇之恩，愿提剑为你战死。"],"note":"摧：毁。甲光：铠甲反光。燕脂：胭脂，指血色。易水：在今河北，用荆轲刺秦典。黄金台：燕昭王筑台招贤处。玉龙：宝剑。","intro":"李贺（790—816），唐代诗人，人称'诗鬼'。此诗写边塞战争，色彩浓烈奇诡。","id":77,"py":[["hēi","yún","yā","chéng","chéng","yù","cuī","","jiǎ","guāng","xiàng","rì","jīn","lín","kāi",""],["jiǎo","shēng","mǎn","tiān","qiū","sè","lǐ","","sài","shàng","yān","zhī","níng","yè","zǐ",""],["bàn","juǎn","hóng","qí","lín","yì","shuǐ","","shuāng","zhòng","gǔ","hán","shēng","bù","qǐ",""],["bào","jūn","huáng","jīn","tái","shàng","yì","","tí","xié","yù","lóng","wèi","jūn","sǐ",""]]},{"t":"渔家傲·秋思","a":"范仲淹","d":"宋","lv":"初中","g":"九年级下","lines":["塞下秋来风景异，衡阳雁去无留意。","四面边声连角起，千嶂里，长烟落日孤城闭。","浊酒一杯家万里，燕然未勒归无计。","羌管悠悠霜满地，人不寐，将军白发征夫泪。"],"tr":["边塞的秋天风景与内地大不相同，大雁飞往衡阳，毫无留恋之意。","四面八方的边地声响随着号角逐起，在层层山峦之中，长烟落日，孤城紧闭城门。","饮下一杯浊酒，家却远在万里之外，功业未成，尚无归期。","羌笛声悠悠传来，白霜铺满大地，将士们难以入睡，将军白了头发，士兵流下眼泪。"],"note":"边声：边地的风声、马嘶等。千嶂：层层叠叠的山。燕然未勒：用窦宪破匈奴刻石燕然典，指功业未成。寐：入睡。","intro":"范仲淹（989—1052），北宋政治家、文学家。此词写他镇守西北边陲时的所见所感，苍凉悲壮。","id":78,"py":[["sài","xià","qiū","lái","fēng","jǐng","yì","","héng","yáng","yàn","qù","wú","liú","yì",""],["sì","miàn","biān","shēng","lián","jiǎo","qǐ","","qiān","zhàng","lǐ","","cháng","yān","luò","rì","gū","chéng","bì",""],["zhuó","jiǔ","yī","bēi","jiā","wàn","lǐ","","yān","rán","wèi","lè","guī","wú","jì",""],["qiāng","guǎn","yōu","yōu","shuāng","mǎn","dì","","rén","bù","mèi","","jiāng","jūn","bái","fà","zhēng","fū","lèi",""]]},{"t":"江城子·密州出猎","a":"苏轼","d":"宋","lv":"初中","g":"九年级上","lines":["老夫聊发少年狂，左牵黄，右擎苍，锦帽貂裘，千骑卷平冈。","为报倾城随太守，亲射虎，看孙郎。","酒酣胸胆尚开张，鬓微霜，又何妨？","持节云中，何日遣冯唐？","会挽雕弓如满月，西北望，射天狼。"],"tr":["我姑且抒发一下少年人的豪兴，左手牵着黄犬，右臂架着苍鹰，戴着锦帽、穿着貂裘，上千骑兵奔驰过平缓的山冈。","为了报答满城百姓跟随太守出猎的盛意，我要亲自射虎，让大家看看孙权的样子。","酒喝得酣畅，胸怀反而更加开阔，鬓角微微发白，又有什么关系呢？","什么时候朝廷能像汉文帝派冯唐来赦免魏尚那样对我委以重任？","到那时我要把雕弓拉得像满月一样，朝西北方向望，射落那颗天狼星。"],"note":"聊：姑且。黄：黄犬。擎苍：托着苍鹰。千骑：形容随从之多。孙郎：孙权，曾亲射虎。持节云中：用冯唐持节赦魏尚典。会：应当。天狼：星名，喻敌人。","intro":"1075 年苏轼任密州太守时出猎所作，是苏轼豪放词的代表作之一。","id":79,"py":[["lǎo","fū","liáo","fā","shào","nián","kuáng","","zuǒ","qiān","huáng","","yòu","qíng","cāng","","jǐn","mào","diāo","qiú","","qiān","jì","juǎn","píng","gāng",""],["wèi","bào","qīng","chéng","suí","tài","shǒu","","qīn","shè","hǔ","","kàn","sūn","láng",""],["jiǔ","hān","xiōng","dǎn","shàng","kāi","zhāng","","bìn","wēi","shuāng","","yòu","hé","fáng",""],["chí","jié","yún","zhōng","","hé","rì","qiǎn","féng","táng",""],["huì","wǎn","diāo","gōng","rú","mǎn","yuè","","xī","běi","wàng","","shè","tiān","láng",""]]},{"t":"破阵子·为陈同甫赋壮词以寄之","a":"辛弃疾","d":"宋","lv":"初中","g":"九年级下","lines":["醉里挑灯看剑，梦回吹角连营。","八百里分麾下炙，五十弦翻塞外声，沙场秋点兵。","马作的卢飞快，弓如霹雳弦惊。","了却君王天下事，赢得生前身后名。","可怜白发生！"],"tr":["醉梦里挑亮灯火看宝剑，梦中醒来听见各个营垒接连响起号角。","把烤牛肉分给部下享用，用各种乐器演奏雄壮的边塞乐曲，这是秋天在战场上检阅军队。","战马像的卢马一样飞奔，弓弦响得像霹雳一样惊人。","替君王完成收复失地的大事，赢得生前身后的美名。","可惜如今白发已经生出来了！"],"note":"陈同甫：陈亮，辛弃疾好友。八百里：牛名，此处指牛肉。麾下：部下。炙：烤肉。五十弦：泛指乐器。的卢：一种烈性快马。了却：完成。","intro":"辛弃疾（1140—1207），南宋词人，一生主张抗金。此词写梦中沙场，末句'可怜白发生'陡然转悲。","id":80,"py":[["zuì","lǐ","tiǎo","dēng","kàn","jiàn","","mèng","huí","chuī","jiǎo","lián","yíng",""],["bā","bǎi","lǐ","fēn","huī","xià","zhì","","wǔ","shí","xián","fān","sài","wài","shēng","","shā","chǎng","qiū","diǎn","bīng",""],["mǎ","zuò","dì","lú","fēi","kuài","","gōng","rú","pī","lì","xián","jīng",""],["liǎo","què","jūn","wáng","tiān","xià","shì","","yíng","dé","shēng","qián","shēn","hòu","míng",""],["kě","lián","bái","fà","shēng",""]]},{"t":"过零丁洋","a":"文天祥","d":"宋","lv":"初中","g":"九年级下","lines":["辛苦遭逢起一经，干戈寥落四周星。","山河破碎风飘絮，身世浮沉雨打萍。","惶恐滩头说惶恐，零丁洋里叹零丁。","人生自古谁无死？留取丹心照汗青。"],"tr":["历尽艰辛，靠精通一种经书入仕做官，战事稀疏已过去四年。","山河破碎得像风中飞絮，身世沉浮如同被雨打动的浮萍。","在惶恐滩头说起惶恐的心情，在零丁洋里叹息自身的孤零。","人生自古谁没有一死？留下这颗赤诚的心光照史册。"],"note":"起一经：凭精通一种经书考中做官。干戈寥落：指战事。四周星：四年。惶恐滩：赣江险滩。丹心：赤诚的心。汗青：史册。","intro":"文天祥（1236—1283），南宋末抗元名臣。此诗写于被元军俘押过零丁洋时，末句成为千古名句。","id":81,"py":[["xīn","kǔ","zāo","féng","qǐ","yī","jīng","","gān","gē","liáo","luò","sì","zhōu","xīng",""],["shān","hé","pò","suì","fēng","piāo","xù","","shēn","shì","fú","chén","yǔ","dǎ","píng",""],["huáng","kǒng","tān","tóu","shuō","huáng","kǒng","","líng","dīng","yáng","lǐ","tàn","líng","dīng",""],["rén","shēng","zì","gǔ","shéi","wú","sǐ","","liú","qǔ","dān","xīn","zhào","hàn","qīng",""]]},{"t":"山坡羊·潼关怀古","a":"张养浩","d":"元","lv":"初中","g":"九年级下","lines":["峰峦如聚，波涛如怒，山河表里潼关路。","望西都，意踌躇。","伤心秦汉经行处，宫阙万间都做了土。","兴，百姓苦；亡，百姓苦。"],"tr":["山峰像是聚拢在一起，波浪像是发怒翻涌，潼关这条路内有华山、外有黄河。","遥望古都长安，心中感慨万千。","令人伤心的是秦汉宫殿经过的地方，千万间宫阙如今都成了废墟。","王朝兴盛，百姓受苦；王朝灭亡，百姓还是受苦。"],"note":"山河表里：外有黄河、内有华山，形容地势险要。西都：长安。踌躇：感慨、思索。经行处：经过的地方。宫阙：宫殿。","intro":"张养浩（1270—1329），元代散曲家。此曲由怀古写到民生，结句极为沉痛。","id":82,"py":[["fēng","luán","rú","jù","","bō","tāo","rú","nù","","shān","hé","biǎo","lǐ","tóng","guān","lù",""],["wàng","xī","dū","","yì","chóu","chú",""],["shāng","xīn","qín","hàn","jīng","xíng","chù","","gōng","què","wàn","jiān","dōu","zuò","le","tǔ",""],["xīng","","bǎi","xìng","kǔ","","wáng","","bǎi","xìng","kǔ",""]]},{"t":"饮酒（其五）","a":"陶渊明","d":"东晋","lv":"初中","g":"八年级上","lines":["结庐在人境，而无车马喧。","问君何能尔？心远地自偏。","采菊东篱下，悠然见南山。","山气日夕佳，飞鸟相与还。","此中有真意，欲辨已忘言。"],"tr":["住在人来人往的地方，却没有车马的喧闹。","要问我怎么能做到这样？心境远离尘俗，住处自然就偏静了。","在东边篱下采菊，不经意间望见了南山。","山中的气息傍晚最好，飞鸟结伴归巢。","这其中藏着人生的真意，想要说明却已经忘了言辞。"],"note":"结庐：建造房屋。人境：人聚居之处。尔：这样。日夕：傍晚。相与还：结伴归巢。真意：人生的真正意趣。","intro":"陶渊明（约365—427），东晋田园诗开创者。此诗写归隐后的闲适心境，'采菊东篱下'最为著名。","id":83,"py":[["jié","lú","zài","rén","jìng","","ér","wú","chē","mǎ","xuān",""],["wèn","jūn","hé","néng","ěr","","xīn","yuǎn","dì","zì","piān",""],["cǎi","jú","dōng","lí","xià","","yōu","rán","jiàn","nán","shān",""],["shān","qì","rì","xī","jiā","","fēi","niǎo","xiāng","yǔ","huán",""],["cǐ","zhōng","yǒu","zhēn","yì","","yù","biàn","yǐ","wàng","yán",""]]},{"t":"己亥杂诗（浩荡离愁白日斜）","a":"龚自珍","d":"清","lv":"初中","g":"七年级下","lines":["浩荡离愁白日斜，","吟鞭东指即天涯。","落红不是无情物，","化作春泥更护花。"],"tr":["无边无际的离愁中，太阳已经西斜，","我挥鞭向东而去，从此天涯路远。","落花并不是没有感情的东西，","它化作春泥，还要滋养来年的花朵。"],"note":"浩荡：广大无边。吟鞭：诗人手中的马鞭。落红：落花。护花：养护新花。","intro":"写于龚自珍辞官南归途中，'落红不是无情物'表达虽离官仍愿有所贡献的心志。","id":84,"py":[["hào","dàng","lí","chóu","bái","rì","xié",""],["yín","biān","dōng","zhǐ","jí","tiān","yá",""],["luò","hóng","bú","shì","wú","qíng","wù",""],["huà","zuò","chūn","ní","gèng","hù","huā",""]]},{"t":"满江红·小住京华","a":"秋瑾","d":"清","lv":"初中","g":"九年级下","lines":["小住京华，早又是，中秋佳节。","为篱下黄花开遍，秋容如拭。","四面歌残终破楚，八年风味徒思浙。","苦将侬强派作蛾眉，殊未屑！","身不得，男儿列；心却比，男儿烈。","算平生肝胆，因人常热。","俗子胸襟谁识我？英雄末路当磨折。","莽红尘，何处觅知音？青衫湿！"],"tr":["在京城小住，转眼又到了中秋佳节。","为篱笆下的菊花已开遍，秋景明净得像刚擦过一样。","周围歌声渐歇，终如项羽困于四面楚歌；客居八年，徒然思念浙江家乡。","苦苦地硬把我派作女子身份，实在是不甘心！","身体不能列入男子行列，心志却比男儿更刚烈。","算来我一生赤诚之心，常因他人而热血涌动。","凡俗之人的胸襟谁能了解我？英雄走到末路，本就该受到磨难挫折。","茫茫人世间，到哪里去寻找知音？泪水打湿了衣衫！"],"note":"京华：北京。拭：擦拭。四面歌残：用项羽四面楚歌典。侬：我。蛾眉：女子。殊未屑：很是不屑。肝胆：赤诚之心。莽红尘：茫茫尘世。青衫湿：泪湿衣衫。","intro":"秋瑾（1875—1907），近代民主革命志士、女诗人。此词写于她寓居北京时，抒巾帼不让须眉之志。","id":85,"py":[["xiǎo","zhù","jīng","huá","","zǎo","yòu","shì","","zhōng","qiū","jiā","jié",""],["wèi","lí","xià","huáng","huā","kāi","biàn","","qiū","róng","rú","shì",""],["sì","miàn","gē","cán","zhōng","pò","chǔ","","bā","nián","fēng","wèi","tú","sī","zhè",""],["kǔ","jiāng","nóng","qiǎng","pài","zuò","é","méi","","shū","wèi","xiè",""],["shēn","bù","dé","","nán","ér","liè","","xīn","què","bǐ","","nán","ér","liè",""],["suàn","píng","shēng","gān","dǎn","","yīn","rén","cháng","rè",""],["sú","zi","xiōng","jīn","shuí","shí","wǒ","","yīng","xióng","mò","lù","dāng","mó","zhé",""],["mǎng","hóng","chén","","hé","chù","mì","zhī","yīn","","qīng","shān","shī",""]]},{"t":"酬乐天扬州初逢席上见赠","a":"刘禹锡","d":"唐","lv":"初中","g":"九年级上","lines":["巴山楚水凄凉地，二十三年弃置身。","怀旧空吟闻笛赋，到乡翻似烂柯人。","沉舟侧畔千帆过，病树前头万木春。","今日听君歌一曲，暂凭杯酒长精神。"],"tr":["巴山楚水这些凄凉的地方，我贬居了二十三年。","怀念故友只能空自吟诵《思旧赋》，回到家乡反而像那个烂了斧柄的人。","沉船的旁边有千帆驶过，病树的前头是万木争春。","今天听你唱一首歌，暂且借这杯酒振作精神。"],"note":"乐天：白居易。闻笛赋：向秀《思旧赋》，悼念故友。烂柯人：王质入山观棋，斧柄朽烂，喻世事变迁。长：增长、振作。","intro":"748 年前后刘禹锡与白居易在扬州相逢，白居易赠诗，此为酬答之作，'沉舟侧畔千帆过'含豁达与向前之意。","id":86,"py":[["bā","shān","chǔ","shuǐ","qī","liáng","dì","","èr","shí","sān","nián","qì","zhì","shēn",""],["huái","jiù","kōng","yín","wén","dí","fù","","dào","xiāng","fān","shì","làn","kē","rén",""],["chén","zhōu","cè","pàn","qiān","fān","guò","","bìng","shù","qián","tou","wàn","mù","chūn",""],["jīn","rì","tīng","jūn","gē","yī","qū","","zàn","píng","bēi","jiǔ","zhǎng","jīng","shén",""]]},{"t":"白雪歌送武判官归京","a":"岑参","d":"唐","lv":"初中","g":"九年级下","lines":["北风卷地白草折，胡天八月即飞雪。","忽如一夜春风来，千树万树梨花开。","散入珠帘湿罗幕，狐裘不暖锦衾薄。","将军角弓不得控，都护铁衣冷难着。","瀚海阑干百丈冰，愁云惨淡万里凝。","中军置酒饮归客，胡琴琵琶与羌笛。","纷纷暮雪下辕门，风掣红旗冻不翻。","轮台东门送君去，去时雪满天山路。","山回路转不见君，雪上空留马行处。"],"tr":["北风卷地而来，白草都被吹折，塞外八月就下起了大雪。","仿佛一夜之间春风吹来，千树万树都开满了梨花。","雪花飘进珠帘打湿了帐幕，狐皮袍子不暖和，锦被也显得单薄。","将军的角弓冻得拉不开，都护的铁甲冷得难以穿上。","沙漠纵横着百丈厚的冰，阴云沉沉在万里长空凝结。","在主帅帐中摆设酒宴为归客饯行，胡琴、琵琶和羌笛一起奏响。","傍晚辕门外大雪纷纷，红旗被冻住，风吹也翻不动。","在轮台东门送你离去，那时大雪铺满了天山的路。","山回路转，已经看不见你的身影，雪地上只留下一串马蹄印。"],"note":"白草：西北一种牧草，干枯后色白。衾：被子。控：拉开。瀚海：沙漠。阑干：纵横交错。辕门：军营大门。掣：拉、扯。","intro":"岑参（约715—770），唐代边塞诗人。此诗写边塞雪景与送别之情，奇丽壮阔。","id":87,"py":[["běi","fēng","juǎn","dì","bái","cǎo","zhé","","hú","tiān","bā","yuè","jí","fēi","xuě",""],["hū","rú","yī","yè","chūn","fēng","lái","","qiān","shù","wàn","shù","lí","huā","kāi",""],["sàn","rù","zhū","lián","shī","luó","mù","","hú","qiú","bù","nuǎn","jǐn","qīn","bó",""],["jiāng","jūn","jiǎo","gōng","bù","dé","kòng","","dū","hù","tiě","yī","lěng","nán","zhuó",""],["hàn","hǎi","lán","gān","bǎi","zhàng","bīng","","chóu","yún","cǎn","dàn","wàn","lǐ","níng",""],["zhōng","jūn","zhì","jiǔ","yǐn","guī","kè","","hú","qín","pí","pá","yǔ","qiāng","dí",""],["fēn","fēn","mù","xuě","xià","yuán","mén","","fēng","chè","hóng","qí","dòng","bù","fān",""],["lún","tái","dōng","mén","sòng","jūn","qù","","qù","shí","xuě","mǎn","tiān","shān","lù",""],["shān","huí","lù","zhuǎn","bú","jiàn","jūn","","xuě","shàng","kōng","liú","mǎ","xíng","chù",""]]},{"t":"卖炭翁","a":"白居易","d":"唐","lv":"初中","g":"八年级下","lines":["卖炭翁，伐薪烧炭南山中。","满面尘灰烟火色，两鬓苍苍十指黑。","卖炭得钱何所营？身上衣裳口中食。","可怜身上衣正单，心忧炭贱愿天寒。","夜来城外一尺雪，晓驾炭车辗冰辙。","牛困人饥日已高，市南门外泥中歇。","翩翩两骑来是谁？黄衣使者白衫儿。","手把文书口称敕，回车叱牛牵向北。","一车炭，千余斤，宫使驱将惜不得。","半匹红纱一丈绫，系向牛头充炭直。"],"tr":["有个卖炭的老人，在南山里砍柴烧炭。","他满脸灰尘，是被烟火熏出的颜色，两鬓斑白，十指乌黑。","卖炭得来的钱用来做什么？只为身上的衣裳和口中的饭食。","可怜他身上衣裳正单薄，心里却怕炭贱而盼着天更冷。","夜里城外下了一尺厚的雪，清早他驾着炭车碾过结冰的车辙。","牛累了，人也饿了，太阳已经很高，就在集市南门外的泥地里歇息。","轻快而来的两个骑马人是谁？是穿黄衣的太监和白衣的随从。","他们手里拿着公文，口称是皇帝的命令，把车掉转，吆喝着牛往北牵。","一车炭，一千多斤，被宫使赶走，舍不得也没办法。","半匹红纱和一丈绫，系在牛头上，就算是这车炭的价钱。"],"note":"薪：柴。营：谋求。辗：碾。辙：车轮印。翩翩：轻快的样子。敕：皇帝命令。叱：吆喝。驱将：赶走。直：同'值'，价钱。","intro":"白居易《新乐府》五十首之一，以卖炭翁的遭遇揭露'宫市'的掠夺，叙事冷峻有力。","id":88,"py":[["mài","tàn","wēng","","fá","xīn","shāo","tàn","nán","shān","zhōng",""],["mǎn","miàn","chén","huī","yān","huǒ","sè","","liǎng","bìn","cāng","cāng","shí","zhǐ","hēi",""],["mài","tàn","dé","qián","hé","suǒ","yíng","","shēn","shàng","yī","shang","kǒu","zhōng","shí",""],["kě","lián","shēn","shàng","yī","zhèng","dān","","xīn","yōu","tàn","jiàn","yuàn","tiān","hán",""],["yè","lái","chéng","wài","yī","chǐ","xuě","","xiǎo","jià","tàn","chē","niǎn","bīng","zhé",""],["niú","kùn","rén","jī","rì","yǐ","gāo","","shì","nán","mén","wài","ní","zhōng","xiē",""],["piān","piān","liǎng","jì","lái","shì","shuí","","huáng","yī","shǐ","zhě","bái","shān","ér",""],["shǒu","bǎ","wén","shū","kǒu","chēng","chì","","huí","chē","chì","niú","qiān","xiàng","běi",""],["yī","chē","tàn","","qiān","yú","jīn","","gōng","shǐ","qū","jiāng","xī","bù","dé",""],["bàn","pǐ","hóng","shā","yī","zhàng","líng","","jì","xiàng","niú","tóu","chōng","tàn","zhí",""]]},{"t":"茅屋为秋风所破歌","a":"杜甫","d":"唐","lv":"初中","g":"八年级下","lines":["八月秋高风怒号，卷我屋上三重茅。","茅飞渡江洒江郊，高者挂罥长林梢，下者飘转沉塘坳。","南村群童欺我老无力，忍能对面为盗贼。","公然抱茅入竹去，唇焦口燥呼不得，归来倚杖自叹息。","俄顷风定云墨色，秋天漠漠向昏黑。","布衾多年冷似铁，娇儿恶卧踏里裂。","床头屋漏无干处，雨脚如麻未断绝。","自经丧乱少睡眠，长夜沾湿何由彻！","安得广厦千万间，大庇天下寒士俱欢颜！风雨不动安如山。","呜呼！何时眼前突兀见此屋，吾庐独破受冻死亦足！"],"tr":["八月深秋，狂风怒吼，把我屋上好几层茅草都卷走了。","茅草飞过江去，散落在江边，高的挂在树梢，低的飘转沉进池塘。","南村的一群孩子欺负我年老无力，竟忍心当面做'贼'。","公然抱着茅草跑进竹林，我喊得唇干口燥也没用，回来拄着拐杖独自叹息。","一会儿风停了，云色如墨，秋天天色阴沉渐渐黑下来。","用过多年的布被冷得像铁，孩子睡相不好把被里都蹬破了。","床头屋顶漏雨，没有一处干燥，雨点密得像麻线一样下个不停。","自经历战乱以来就很少睡好，这漫漫长夜湿漉漉的，怎么熬到天亮！","怎么才能得到千万间宽敞的大房子，让天下贫寒之士都能欢颜安居，风雨中安稳如山。","唉！什么时候眼前能突然出现这样的房子，就算我一个人的茅屋破了、受冻而死也心甘情愿！"],"note":"挂罥：挂住、缠绕。塘坳：低洼积水处。忍能：竟然忍心这样。俄顷：一会儿。漠漠：阴沉昏暗。恶卧：睡相不好。丧乱：指安史之乱。彻：直到天亮。突兀：高耸的样子。","intro":"761 年杜甫在成都草堂所作，由自身之苦推及天下寒士，是杜甫仁者胸怀的集中体现。","id":89,"py":[["bā","yuè","qiū","gāo","fēng","nù","háo","","juǎn","wǒ","wū","shàng","sān","chóng","máo",""],["máo","fēi","dù","jiāng","sǎ","jiāng","jiāo","","gāo","zhě","guà","juàn","cháng","lín","shāo","","xià","zhě","piāo","zhuǎn","chén","táng","ào",""],["nán","cūn","qún","tóng","qī","wǒ","lǎo","wú","lì","","rěn","néng","duì","miàn","wéi","dào","zéi",""],["gōng","rán","bào","máo","rù","zhú","qù","","chún","jiāo","kǒu","zào","hū","bù","dé","","guī","lái","yǐ","zhàng","zì","tàn","xī",""],["é","qǐng","fēng","dìng","yún","mò","sè","","qiū","tiān","mò","mò","xiàng","hūn","hēi",""],["bù","qīn","duō","nián","lěng","shì","tiě","","jiāo","ér","è","wò","tà","lǐ","liè",""],["chuáng","tóu","wū","lòu","wú","gān","chù","","yǔ","jiǎo","rú","má","wèi","duàn","jué",""],["zì","jīng","sāng","luàn","shǎo","shuì","mián","","cháng","yè","zhān","shī","hé","yóu","chè",""],["ān","dé","guǎng","shà","qiān","wàn","jiān","","dà","bì","tiān","xià","hán","shì","jù","huān","yán","","fēng","yǔ","bù","dòng","ān","rú","shān",""],["wū","hū","","hé","shí","yǎn","qián","tū","wù","jiàn","cǐ","wū","","wú","lú","dú","pò","shòu","dòng","sǐ","yì","zú",""]]},{"t":"关雎","a":"《诗经》","d":"先秦","lv":"初中","g":"八年级下","lines":["关关雎鸠，在河之洲。","窈窕淑女，君子好逑。","参差荇菜，左右流之。","窈窕淑女，寤寐求之。","求之不得，寤寐思服。","悠哉悠哉，辗转反侧。","参差荇菜，左右采之。","窈窕淑女，琴瑟友之。","参差荇菜，左右芼之。","窈窕淑女，钟鼓乐之。"],"tr":["雎鸠鸟关关地鸣叫，停在河中的小洲上。","美丽善良的姑娘，是君子的好配偶。","长短不齐的荇菜，左右两边去捞取。","美丽善良的姑娘，我日夜都在思念她。","追求不到她，日夜都在思念。","思念绵绵不尽，翻来覆去睡不着。","长短不齐的荇菜，左右两边去采摘。","美丽善良的姑娘，我弹琴鼓瑟来亲近她。","长短不齐的荇菜，左右两边去挑选。","美丽善良的姑娘，我敲钟击鼓让她快乐。"],"note":"雎鸠：一种水鸟。洲：水中的陆地。窈窕：美好的样子。好逑：好的配偶。寤寐：日日夜夜。荇菜：水生植物。芼：挑选。","intro":"《诗经·周南》首篇，是中国最早的爱情诗之一，重章叠句、以物起兴。","id":90,"py":[["guān","guān","jū","jiū","","zài","hé","zhī","zhōu",""],["yǎo","tiǎo","shū","nǚ","","jūn","zǐ","hǎo","qiú",""],["cēn","cī","xìng","cài","","zuǒ","yòu","liú","zhī",""],["yǎo","tiǎo","shū","nǚ","","wù","mèi","qiú","zhī",""],["qiú","zhī","bù","dé","","wù","mèi","sī","fú",""],["yōu","zāi","yōu","zāi","","zhǎn","zhuǎn","fǎn","cè",""],["cēn","cī","xìng","cài","","zuǒ","yòu","cǎi","zhī",""],["yǎo","tiǎo","shū","nǚ","","qín","sè","yǒu","zhī",""],["cēn","cī","xìng","cài","","zuǒ","yòu","mào","zhī",""],["yǎo","tiǎo","shū","nǚ","","zhōng","gǔ","lè","zhī",""]]},{"t":"蒹葭","a":"《诗经》","d":"先秦","lv":"初中","g":"八年级下","lines":["蒹葭苍苍，白露为霜。","所谓伊人，在水一方。","溯洄从之，道阻且长。","溯游从之，宛在水中央。","蒹葭萋萋，白露未晞。","所谓伊人，在水之湄。","溯洄从之，道阻且跻。","溯游从之，宛在水中坻。"],"tr":["芦苇茂密苍青，白露凝结成霜。","我思念的那个人，在河水的那一边。","逆流而上去寻她，道路险阻又漫长。","顺流而下去寻她，仿佛她就在水的中央。","芦苇茂盛繁密，白露还没有干。","我思念的那个人，在河水岸边。","逆流而上去寻她，道路险阻又难登。","顺流而下去寻她，仿佛她就在水中小洲。"],"note":"蒹葭：芦苇。苍苍：茂盛的样子。伊人：那个人。溯洄：逆流而上。溯游：顺流而下。晞：干。湄：水边。跻：升高。坻：水中小高地。","intro":"《诗经·秦风》名篇，写对'伊人'的追求与可望不可即，意境朦胧悠远。","id":91,"py":[["jiān","jiā","cāng","cāng","","bái","lù","wéi","shuāng",""],["suǒ","wèi","yī","rén","","zài","shuǐ","yī","fāng",""],["sù","huí","cóng","zhī","","dào","zǔ","qiě","cháng",""],["sù","yóu","cóng","zhī","","wǎn","zài","shuǐ","zhōng","yāng",""],["jiān","jiā","qī","qī","","bái","lù","wèi","xī",""],["suǒ","wèi","yī","rén","","zài","shuǐ","zhī","méi",""],["sù","huí","cóng","zhī","","dào","zǔ","qiě","jī",""],["sù","yóu","cóng","zhī","","wǎn","zài","shuǐ","zhōng","chí",""]]},{"t":"木兰诗（节选）","a":"北朝民歌","d":"南北朝","lv":"初中","g":"七年级下","lines":["唧唧复唧唧，木兰当户织。","不闻机杼声，惟闻女叹息。","问女何所思，问女何所忆。","女亦无所思，女亦无所忆。","昨夜见军帖，可汗大点兵。","军书十二卷，卷卷有爷名。","阿爷无大儿，木兰无长兄。","愿为市鞍马，从此替爷征。"],"tr":["织布机唧唧地响个不停，木兰对着门在织布。","听不到织布机的声音，只听见姑娘在叹息。","问姑娘在想什么，问姑娘在思念什么。","姑娘也没有想什么，姑娘也没有思念什么。","昨夜看到军中的文告，可汗大规模征兵。","征兵的名册有十二卷，每一卷上都有父亲的名字。","父亲没有成年的儿子，木兰没有年长的哥哥。","愿意为此去买鞍马，从此代替父亲出征。"],"note":"唧唧：织布机声。机杼：织布机的部件。军帖：征兵的文书。可汗：古代西北民族对君主的称呼。市：买。","intro":"北朝乐府民歌，写木兰代父从军的故事，教材节选开篇部分。","id":92,"py":[["jī","jī","fù","jī","jī","","mù","lán","dāng","hù","zhī",""],["bù","wén","jī","zhù","shēng","","wéi","wén","nǚ","tàn","xī",""],["wèn","nǚ","hé","suǒ","sī","","wèn","nǚ","hé","suǒ","yì",""],["nǚ","yì","wú","suǒ","sī","","nǚ","yì","wú","suǒ","yì",""],["zuó","yè","jiàn","jūn","tiě","","kè","hán","dà","diǎn","bīng",""],["jūn","shū","shí","èr","juàn","","juàn","juàn","yǒu","yé","míng",""],["ā","yé","wú","dà","ér","","mù","lán","wú","zhǎng","xiōng",""],["yuàn","wèi","shì","ān","mǎ","","cóng","cǐ","tì","yé","zhēng",""]]}];
+var KEY = 'wb_gushi_v1';
+var STAGE_DAYS = [1, 2, 4, 7, 15, 30];
+var STAGE_NAME = ['刚加入', '初记', '较熟', '熟练', '已掌握', '已掌握'];
+var TOTAL = POEMS.length;
+
+/* ============ 工具 ============ */
+function pad(n){ return n < 10 ? '0' + n : '' + n; }
+function fmt(d){ return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function todayStr(){ return fmt(new Date()); }
+function addDays(base, n){
+  var p = base.split('-');
+  var d = new Date(+p[0], +p[1] - 1, +p[2]);
+  d.setDate(d.getDate() + n);
+  return fmt(d);
+}
+function diffDays(a, b){
+  var pa = a.split('-'), pb = b.split('-');
+  var da = new Date(+pa[0], +pa[1] - 1, +pa[2]);
+  var db = new Date(+pb[0], +pb[1] - 1, +pb[2]);
+  return Math.round((db - da) / 86400000);
+}
+function cnDate(s){
+  var p = s.split('-');
+  return (+p[1]) + '月' + (+p[2]) + '日';
+}
+function esc(s){
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function byId(id){ return document.getElementById(id); }
+function findPoem(id){
+  for (var i = 0; i < POEMS.length; i++) if (POEMS[i].id === id) return POEMS[i];
+  return null;
+}
+
+/* ============ 状态 ============ */
+var state = { learned: {}, q: '', filter: 'all', openId: null, showPy: true, showTr: true, demo: false };
+
+function loadState(){
+  var raw = null;
+  try { raw = localStorage.getItem(KEY); } catch (e) { raw = null; }
+  if (!raw) { seedDemo(); return; }
+  try {
+    var d = JSON.parse(raw);
+    state.learned = d.learned || {};
+    state.demo = !!d.demo;
+    // 清理失效 id
+    var valid = {};
+    for (var k in state.learned) {
+      if (findPoem(+k)) valid[k] = normEntry(state.learned[k]);
+    }
+    state.learned = valid;
+  } catch (e) {
+    seedDemo();
+  }
+}
+
+function saveState(){
+  try {
+    localStorage.setItem(KEY, JSON.stringify({ learned: state.learned, demo: state.demo, v: 1 }));
+  } catch (e) {}
+}
+
+/* 首次打开：预置示例数据（含 1 条逾期） */
+function seedDemo(){
+  var t = todayStr();
+  state.learned = {};
+  // 静夜思：逾期 2 天
+  state.learned[3] = { added: addDays(t, -9), stage: 2, reviews: 2, last: addDays(t, -6), next: addDays(t, -2) };
+  // 春晓：今天到期
+  state.learned[2] = { added: addDays(t, -3), stage: 1, reviews: 1, last: addDays(t, -2), next: t };
+  // 咏鹅：明天到期（已掌握状态演示）
+  state.learned[1] = { added: addDays(t, -12), stage: 4, reviews: 4, last: addDays(t, -5), next: addDays(t, 3) };
+  state.demo = true;
+  saveState();
+}
+
+/* ============ 业务计算（纯函数） ============ */
+function entryOf(id){ return state.learned[id] || null; }
+
+/* 规范化一条学习记录（兼容旧数据 / 导入文件） */
+function normEntry(v){
+  v = v || {};
+  var t = todayStr();
+  var s = typeof v.stage === 'number' ? Math.max(0, Math.min(5, v.stage)) : 0;
+  return {
+    added: typeof v.added === 'string' ? v.added : t,
+    stage: s,
+    reviews: typeof v.reviews === 'number' ? v.reviews : 0,
+    last: typeof v.last === 'string' ? v.last : null,
+    next: typeof v.next === 'string' ? v.next : addDays(t, 1)
+  };
+}
+
+function reviewQueue(){
+  var t = todayStr(), out = [];
+  for (var k in state.learned) {
+    var e = state.learned[k];
+    if (e.next <= t) {
+      var p = findPoem(+k);
+      if (!p) continue;
+      out.push({ poem: p, entry: e, overdue: diffDays(e.next, t) });
+    }
+  }
+  out.sort(function(a, b){ return a.entry.next < b.entry.next ? -1 : (a.entry.next > b.entry.next ? 1 : 0); });
+  return out;
+}
+
+function counts(){
+  var learned = 0, master = 0, t = todayStr(), due = 0;
+  for (var k in state.learned) {
+    learned++;
+    if (state.learned[k].stage >= 4) master++;
+    if (state.learned[k].next <= t) due++;
+  }
+  return { learned: learned, master: master, due: due };
+}
+
+function searchResult(){
+  var q = state.q.trim().toLowerCase();
+  var out = [];
+  for (var i = 0; i < POEMS.length; i++) {
+    var p = POEMS[i];
+    if (state.filter === 'learned' && !state.learned[p.id]) continue;
+    if (state.filter === 'master' && !(state.learned[p.id] && state.learned[p.id].stage >= 4)) continue;
+    if (state.filter === '小学' && p.lv !== '小学') continue;
+    if (state.filter === '初中' && p.lv !== '初中') continue;
+    if (!q) { out.push(p); continue; }
+    var hay = (p.t + p.a + p.d + p.lines.join('')).toLowerCase();
+    if (hay.indexOf(q) >= 0) out.push(p);
+  }
+  return out;
+}
+
+function hl(text, q){
+  if (!q) return esc(text);
+  var idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx < 0) return esc(text);
+  return esc(text.slice(0, idx)) + '<mark>' + esc(text.slice(idx, idx + q.length)) + '</mark>' + esc(text.slice(idx + q.length));
+}
+
+/* ============ 渲染 ============ */
+function renderNav(){
+  var c = counts();
+  var badge = byId('navBadge'), tab = byId('tabBadge');
+  if (c.due > 0) {
+    badge.style.display = 'inline-block'; badge.textContent = c.due;
+    tab.style.display = 'inline-block'; tab.textContent = c.due;
+  } else {
+    badge.style.display = 'none'; tab.style.display = 'none';
+  }
+}
+
+function renderToday(){
+  var t = todayStr();
+  var d = new Date();
+  var wk = ['日', '一', '二', '三', '四', '五', '六'][d.getDay()];
+  byId('greetSub').textContent = t.replace(/-/g, ' / ') + ' 星期' + wk;
+
+  var c = counts();
+  byId('statDue').innerHTML = c.due + '<small>首</small>';
+  byId('statLearned').innerHTML = c.learned + '<small>首</small>';
+  byId('statMaster').innerHTML = c.master + '<small>首</small>';
+
+  byId('demoTip').style.display = (state.demo && c.learned > 0) ? 'flex' : 'none';
+
+  var q = reviewQueue();
+  var box = byId('reviewList');
+  if (!q.length) {
+    box.innerHTML = '<div class="card empty"><h3>今天的复习任务清空了</h3>' +
+      '<p>去「查找诗词」里挑一首，加入题库后会自动安排复习</p>' +
+      '<button class="btn primary" data-go="search">去找一首诗</button></div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < q.length; i++) {
+    var it = q[i], p = it.poem, e = it.entry;
+    var late = it.overdue > 0;
+    var tag = late
+      ? '<span class="tag late">逾期 ' + it.overdue + ' 天</span>'
+      : '<span class="tag today">今天该复习</span>';
+    var stageTag = e.stage >= 4 ? '<span class="tag master">已掌握</span>' : '<span class="tag">' + STAGE_NAME[e.stage] + '</span>';
+    html += '<div class="rev' + (late ? ' late' : '') + '">' +
+      '<div class="rev-main" data-open="' + p.id + '">' +
+        '<div class="rev-t">' + esc(p.t) + tag + stageTag + '</div>' +
+        '<div class="rev-s">' + esc(p.d) + ' · ' + esc(p.a) + ' · ' + esc(p.lines[0]) + '</div>' +
+      '</div>' +
+      '<div class="rev-act">' +
+        '<button class="btn sm" data-open="' + p.id + '">看原文</button>' +
+        '<button class="btn sm" data-again="' + p.id + '">还不熟</button>' +
+        '<button class="btn primary sm" data-ok="' + p.id + '">记住了</button>' +
+      '</div></div>';
+  }
+  box.innerHTML = html;
+}
+
+function renderSearch(){
+  var list = searchResult();
+  var q = state.q.trim();
+  var lbl = { all: '题库共', '小学': '小学共', '初中': '初中共', learned: '已学习', master: '已掌握' };
+  byId('resMeta').textContent = q
+    ? '找到 ' + list.length + ' 首相关诗词'
+    : (lbl[state.filter] || '题库共') + ' ' + list.length + ' 首';
+
+  var box = byId('resList');
+  if (!list.length) {
+    box.innerHTML = '<div class="card empty" style="grid-column:1/-1"><h3>没有找到相关诗词</h3>' +
+      '<p>换个关键词试试：诗名、作者名，或诗中的一句</p></div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < list.length; i++) {
+    var p = list[i];
+    var mark = state.learned[p.id] ? '<span class="learned-dot" title="已加入题库"></span>' : '';
+    html += '<div class="res" data-open="' + p.id + '">' + mark +
+      '<div class="res-t">' + hl(p.t, q) + '</div>' +
+      '<div class="res-a">' + esc(p.d) + ' · ' + hl(p.a, q) + ' · ' + esc(p.g) + '</div>' +
+      '<div class="res-l">' + hl(p.lines.join(''), q) + '</div></div>';
+  }
+  box.innerHTML = html;
+}
+
+function renderLibrary(){
+  var arr = [];
+  for (var k in state.learned) {
+    var p = findPoem(+k);
+    if (p) arr.push({ poem: p, entry: state.learned[k] });
+  }
+  arr.sort(function(a, b){ return a.entry.next < b.entry.next ? -1 : 1; });
+
+  var c = counts();
+  var pct = Math.round(c.learned / TOTAL * 100);
+  byId('libBig').innerHTML = c.learned + '<small> / ' + TOTAL + ' 首</small>';
+  byId('libSub').textContent = c.master > 0 ? '已掌握 ' + c.master + ' 首，待复习 ' + c.due + ' 首' : '学习进度';
+  byId('ringPct').textContent = pct + '%';
+  byId('ringArc').setAttribute('stroke-dashoffset', String(201 - 201 * pct / 100));
+  byId('libCount').textContent = arr.length ? '共 ' + arr.length + ' 首' : '';
+
+  var box = byId('libList');
+  if (!arr.length) {
+    box.innerHTML = '<div class="card empty"><h3>题库还是空的</h3>' +
+      '<p>在「查找诗词」里打开任意一首，点「加入学习题库」即可收藏并安排复习</p>' +
+      '<button class="btn primary" data-go="search">去挑一首</button></div>';
+    return;
+  }
+  var t = todayStr();
+  var html = '';
+  for (var i = 0; i < arr.length; i++) {
+    var it = arr[i], p = it.poem, e = it.entry;
+    var status = e.next <= t
+      ? '<b>待复习</b>' + (e.next < t ? '（逾期 ' + diffDays(e.next, t) + ' 天）' : '（今天）')
+      : '下次复习 ' + cnDate(e.next);
+    var w = Math.min(100, Math.round(e.stage / 5 * 100));
+    html += '<div class="lib-item">' +
+      '<div class="m" data-open="' + p.id + '">' +
+        '<div class="t">' + esc(p.t) + (e.stage >= 4 ? ' <span class="tag master">已掌握</span>' : '') + '</div>' +
+        '<div class="s">' + esc(p.d) + ' · ' + esc(p.a) + ' · ' + status + ' · 已复习 ' + e.reviews + ' 次</div>' +
+        '<div class="prog"><i style="width:' + w + '%"></i></div>' +
+      '</div>' +
+      '<button class="btn sm" data-open="' + p.id + '">打开</button>' +
+    '</div>';
+  }
+  box.innerHTML = html;
+}
+
+/* 详情：只渲染当前打开的诗词，不触发其它渲染函数 */
+function renderDetail(){
+  var p = findPoem(state.openId);
+  if (!p) return;
+  byId('dTitle').textContent = p.t;
+  byId('dMeta').innerHTML = '<span>' + esc(p.d) + '</span><span>' + esc(p.a) + '</span><span>' + esc(p.g) + '</span>';
+
+  var html = '';
+  for (var i = 0; i < p.lines.length; i++) {
+    var line = p.lines[i], py = p.py[i], inner = '';
+    for (var j = 0; j < line.length; j++) {
+      var ch = line.charAt(j);
+      inner += '<span class="ch"><span class="py">' + (py[j] ? esc(py[j]) : '') + '</span>' + esc(ch) + '</span>';
+    }
+    html += '<div class="pl"><div class="hz">' + inner + '</div>' +
+      '<div class="tr">' + esc(p.tr[i] || '') + '</div></div>';
+  }
+  var poemBox = byId('dPoem');
+  poemBox.innerHTML = html;
+  poemBox.className = 'poem' + (state.showPy ? '' : ' hide-py') + (state.showTr ? '' : ' hide-tr');
+
+  byId('dNote').textContent = p.note;
+  byId('dIntro').textContent = p.intro;
+
+  var e = entryOf(p.id);
+  var tip = byId('dTip'), btn = byId('dLearn');
+  if (e) {
+    var t = todayStr();
+    var when = e.next <= t ? (e.next < t ? '已逾期 ' + diffDays(e.next, t) + ' 天' : '今天该复习') : '下次复习 ' + cnDate(e.next);
+    byId('dRecord').innerHTML = '第 ' + e.reviews + ' 次复习 · ' + STAGE_NAME[e.stage] + ' · ' + when;
+    tip.textContent = '已在题库中';
+    btn.textContent = '移出题库';
+    btn.className = 'btn';
+  } else {
+    byId('dRecord').textContent = '还没有加入学习题库，加入后会按 1 / 2 / 4 / 7 / 15 天的节奏安排复习。';
+    tip.textContent = '';
+    btn.textContent = '加入学习题库';
+    btn.className = 'btn primary';
+  }
+  byId('tgPy').textContent = state.showPy ? '拼音 开' : '拼音 关';
+  byId('tgPy').className = 'btn sm' + (state.showPy ? ' tool-on' : '');
+  byId('tgTr').textContent = state.showTr ? '译文 开' : '译文 关';
+  byId('tgTr').className = 'btn sm' + (state.showTr ? ' tool-on' : '');
+  byId('tgRead').textContent = (ttsSupported() && window.speechSynthesis.speaking) ? '停止' : '朗读';
+}
+
+/* 统一刷新入口（铁律：渲染函数互不调用，由这里统一调度） */
+function refreshAll(){
+  renderNav();
+  renderToday();
+  renderSearch();
+  renderLibrary();
+}
+
+/* ============ 趣味练习 ============ */
+var deck = { link: [], fill: [] };
+var play = { mode: 'link', last: -1, item: null, answered: false, score: { correct: 0, streak: 0, best: 0 } };
+
+function buildDeck(){
+  var src = [];
+  for (var k in state.learned){ var p = findPoem(+k); if (p) src.push(p); }
+  if (!src.length) src = POEMS;            // 还没学就先拿全部题库练手
+  var link = [], fill = [];
+  for (var i = 0; i < src.length; i++){
+    var p = src[i];
+    for (var j = 0; j < p.lines.length - 1; j++) link.push({ poem: p, i: j });
+    for (var m = 0; m < p.lines.length; m++){
+      var line = p.lines[m], py = p.py[m];
+      for (var n = 0; n < line.length; n++){
+        if (py[n] && /[一-龥]/.test(line.charAt(n))) fill.push({ poem: p, i: m, pos: n });
+      }
+    }
+  }
+  deck.link = link; deck.fill = fill;
+}
+
+function ttsSupported(){ return ('speechSynthesis' in window); }
+function zhVoice(){
+  if (!ttsSupported()) return null;
+  var vs = window.speechSynthesis.getVoices() || [];
+  for (var i = 0; i < vs.length; i++){
+    if (/zh|cmn|Chinese/i.test(vs[i].lang + vs[i].name)) return vs[i];
+  }
+  return null;
+}
+function speak(text){
+  if (!ttsSupported()){ toast('当前环境不支持语音朗读'); return; }
+  try {
+    window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'zh-CN'; u.rate = 0.85; u.pitch = 1;
+    var v = zhVoice(); if (v) u.voice = v;
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+function renderPlay(){
+  buildDeck();
+  var srcCount = 0; for (var k in state.learned) srcCount++;
+  byId('playSrc').textContent = srcCount
+    ? ('出题范围：已学习的 ' + srcCount + ' 首')
+    : '还没加入题库，先用全部 ' + TOTAL + ' 首练习';
+  play.last = -1;
+  startRound();
+}
+
+function pickFrom(arr){
+  if (!arr.length) return null;
+  var idx;
+  do { idx = Math.floor(Math.random() * arr.length); } while (arr.length > 1 && idx === play.last);
+  play.last = idx;
+  return arr[idx];
+}
+
+function startRound(){
+  play.answered = false; play.item = null;
+  var arr = play.mode === 'link' ? deck.link : deck.fill;
+  var it = pickFrom(arr);
+  if (!it){ byId('playCard').innerHTML = '<div class="play-empty">题库为空，加几首诗再来玩吧</div>'; return; }
+  play.item = it;
+  renderRound();
+}
+
+function normHan(s){ return (s || '').replace(/[^\u4e00-\u9fa5]/g, ''); }
+
+function renderRound(){
+  var it = play.item, card = byId('playCard');
+  if (play.mode === 'link'){
+    var poem = it.poem, up = poem.lines[it.i], down = poem.lines[it.i + 1];
+    var upPy = poem.py[it.i].filter(Boolean).join(' ');
+    card.innerHTML =
+      '<div class="play-score"><span>本轮答对<b id="psCorrect">' + play.score.correct + '</b></span>' +
+      '<span class="streak">连对<b id="psStreak">' + play.score.streak + '</b></span>' +
+      '<span>最佳连对<b>' + play.score.best + '</b></span></div>' +
+      '<div style="text-align:center;font-size:12px;color:var(--ink-3);margin-bottom:4px">上句（点「朗读上句」听一听）</div>' +
+      '<div class="play-q">' + esc(up) + '<div class="sub">— ' + esc(poem.t) + ' · ' + esc(poem.a) + '</div></div>' +
+      '<div class="play-py">' + esc(upPy) + '</div>' +
+      '<div class="play-actions" style="margin-top:4px">' +
+        '<button class="btn sm" id="btnReadUp"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg> 朗读上句</button>' +
+      '</div>' +
+      '<input class="play-input" id="playInput" placeholder="写出下一句" autocomplete="off" maxlength="40">' +
+      '<div class="play-ans" id="playAns"></div>' +
+      '<div class="play-actions">' +
+        '<button class="btn primary" id="btnSubmit">提交</button>' +
+        '<button class="btn" id="btnHint">提示首字</button>' +
+        '<button class="btn" id="btnSkip">换一句</button>' +
+      '</div>' +
+      '<div class="play-foot">听上句 → 默写下句 → 提交。答错会显示正确答案；连对越多越有成就感。</div>';
+    var inp = byId('playInput'); inp.focus();
+    byId('btnReadUp').onclick = function(){ speak(up); };
+    byId('btnSubmit').onclick = function(){ submitLink(down); };
+    byId('btnHint').onclick = function(){ inp.value = normHan(down).charAt(0); inp.focus(); };
+    byId('btnSkip').onclick = function(){ startRound(); };
+    inp.onkeydown = function(e){ if (e.key === 'Enter') submitLink(down); };
+  } else {
+    var p2 = it.poem, line = p2.lines[it.i], py = p2.py[it.i];
+    var ch = line.charAt(it.pos), chPy = py[it.pos];
+    var shown = line.slice(0, it.pos) + '＿' + line.slice(it.pos + 1);
+    card.innerHTML =
+      '<div class="play-score"><span>本轮答对<b id="psCorrect">' + play.score.correct + '</b></span>' +
+      '<span class="streak">连对<b id="psStreak">' + play.score.streak + '</b></span>' +
+      '<span>最佳连对<b>' + play.score.best + '</b></span></div>' +
+      '<div style="text-align:center;font-size:12px;color:var(--ink-3);margin-bottom:4px">补全空缺的字（' + esc(p2.t) + ' · ' + esc(p2.a) + '）</div>' +
+      '<div class="play-q">' + esc(shown) + '<div class="sub">拼音提示：' + esc(chPy) + '</div></div>' +
+      '<input class="play-input" id="playInput" placeholder="填一个字" autocomplete="off" maxlength="2">' +
+      '<div class="play-ans" id="playAns"></div>' +
+      '<div class="play-actions">' +
+        '<button class="btn primary" id="btnSubmit">提交</button>' +
+        '<button class="btn" id="btnSkip">换一句</button>' +
+      '</div>' +
+      '<div class="play-foot">根据拼音提示，把空缺的那个字补上。错了会显示正确答案。</div>';
+    var inp2 = byId('playInput'); inp2.focus();
+    byId('btnSubmit').onclick = function(){ submitFill(ch); };
+    byId('btnSkip').onclick = function(){ startRound(); };
+    inp2.onkeydown = function(e){ if (e.key === 'Enter') submitFill(ch); };
+  }
+}
+
+function submitLink(down){
+  if (play.answered){ startRound(); return; }
+  var inp = byId('playInput'), ans = byId('playAns');
+  var val = normHan(inp.value), target = normHan(down);
+  if (!val){ toast('先写点什么～'); return; }
+  play.answered = true;
+  if (val === target){
+    play.score.correct++; play.score.streak++;
+    if (play.score.streak > play.score.best) play.score.best = play.score.streak;
+    inp.classList.add('ok');
+    ans.className = 'play-ans ok'; ans.textContent = '✓ 正确！下一句：' + down;
+    refreshScore();
+    setTimeout(startRound, 1100);
+  } else {
+    play.score.streak = 0;
+    inp.classList.add('bad');
+    ans.className = 'play-ans'; ans.textContent = '正确答案：' + down + '（再听一遍上句巩固）';
+    refreshScore();
+    byId('btnSubmit').textContent = '下一句';
+  }
+}
+
+function submitFill(ch){
+  if (play.answered){ startRound(); return; }
+  var inp = byId('playInput'), ans = byId('playAns');
+  var val = (inp.value || '').trim();
+  if (!val){ toast('填一个字吧'); return; }
+  play.answered = true;
+  if (val === ch){
+    play.score.correct++; play.score.streak++;
+    if (play.score.streak > play.score.best) play.score.best = play.score.streak;
+    inp.classList.add('ok');
+    ans.className = 'play-ans ok'; ans.textContent = '✓ 正确！';
+    refreshScore();
+    setTimeout(startRound, 1000);
+  } else {
+    play.score.streak = 0;
+    inp.classList.add('bad');
+    ans.className = 'play-ans'; ans.textContent = '正确答案：' + ch;
+    refreshScore();
+    byId('btnSubmit').textContent = '下一句';
+  }
+}
+
+function refreshScore(){
+  var c = byId('psCorrect'), s = byId('psStreak');
+  if (c) c.textContent = play.score.correct;
+  if (s) s.textContent = play.score.streak;
+}
+
+/* 详情页：整诗朗读 */
+function readPoem(p){
+  if (!ttsSupported()){ toast('当前环境不支持语音朗读'); return; }
+  var lines = p.lines.map(function(l){ return l.replace(/[，。？！、；：]/g, ''); });
+  var i = 0;
+  function next(){
+    if (i >= lines.length){ byId('tgRead').textContent = '朗读'; return; }
+    var u = new SpeechSynthesisUtterance(lines[i]);
+    u.lang = 'zh-CN'; u.rate = 0.8; u.pitch = 1;
+    var v = zhVoice(); if (v) u.voice = v;
+    u.onend = function(){ i++; setTimeout(next, 350); };
+    window.speechSynthesis.speak(u);
+  }
+  next();
+}
+
+/* ============ 事件 ============ */
+function switchView(name){
+  if (name !== 'play' && ttsSupported()) window.speechSynthesis.cancel();
+  var views = document.querySelectorAll('.view');
+  for (var i = 0; i < views.length; i++) views[i].classList.remove('on');
+  byId('view-' + name).classList.add('on');
+  var titles = { today: '今日复习', search: '查找诗词', library: '学习题库', play: '趣味练习' };
+  byId('viewTitle').textContent = titles[name] || '';
+  var navs = document.querySelectorAll('.nav-btn, .tab');
+  for (var j = 0; j < navs.length; j++) {
+    navs[j].classList.toggle('on', navs[j].getAttribute('data-view') === name);
+  }
+  if (name === 'play') renderPlay();
+  window.scrollTo(0, 0);
+}
+
+function openDetail(id){
+  state.openId = id;
+  renderDetail();
+  byId('mask').classList.add('on');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDetail(){
+  byId('mask').classList.remove('on');
+  document.body.style.overflow = '';
+  state.openId = null;
+  if (ttsSupported()) window.speechSynthesis.cancel();
+}
+
+function toast(msg){
+  var el = byId('toast');
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(el._t);
+  el._t = setTimeout(function(){ el.classList.remove('on'); }, 1900);
+}
+
+function addToLibrary(id){
+  if (state.learned[id]) return;
+  var t = todayStr();
+  state.learned[id] = { added: t, stage: 0, reviews: 0, last: null, next: addDays(t, 1) };
+  saveState();
+  refreshAll();
+  renderDetail();
+  toast('已加入学习题库，明天开始复习');
+}
+
+function removeFromLibrary(id){
+  delete state.learned[id];
+  saveState();
+  refreshAll();
+  renderDetail();
+  toast('已移出题库');
+}
+
+function markReview(id, ok){
+  var e = state.learned[id];
+  if (!e) return;
+  var t = todayStr();
+  if (ok) {
+    e.stage = Math.min(e.stage + 1, 5);
+    e.reviews = e.reviews + 1;
+    e.last = t;
+    e.next = addDays(t, STAGE_DAYS[Math.min(e.stage, 5)]);
+  } else {
+    e.stage = 0;
+    e.reviews = e.reviews + 1;
+    e.last = t;
+    e.next = addDays(t, 1);
+  }
+  saveState();
+  refreshAll();
+  toast(ok ? '复习完成，' + cnDate(e.next) + '再见' : '没关系，明天再复习一次');
+}
+
+function exportJSON(){
+  var payload = { app: 'gushi-workbench', v: 1, exported: new Date().toISOString(), learned: state.learned };
+  var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = '古诗词学习备份_' + todayStr() + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1200);
+  toast('备份已导出');
+}
+
+function importJSON(file){
+  var reader = new FileReader();
+  reader.onload = function(){
+    try {
+      var d = JSON.parse(reader.result);
+      var src = d.learned || d;
+      var n = 0;
+      for (var k in src) {
+        if (!findPoem(+k)) continue;
+        if (!src[k] || typeof src[k] !== 'object') continue;
+        state.learned[k] = normEntry(src[k]);
+        n++;
+      }
+      saveState();
+      refreshAll();
+      toast('已导入 ' + n + ' 首诗词记录');
+    } catch (e) {
+      toast('文件格式不对，导入失败');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function bind(){
+  // 导航
+  var navs = document.querySelectorAll('.nav-btn, .tab');
+  for (var i = 0; i < navs.length; i++) {
+    navs[i].addEventListener('click', function(){ switchView(this.getAttribute('data-view')); });
+  }
+
+  // 搜索
+  var q = byId('q');
+  q.addEventListener('input', function(){
+    state.q = this.value;
+    byId('clearQ').classList.toggle('on', !!this.value);
+    renderSearch();
+  });
+  byId('clearQ').addEventListener('click', function(){
+    byId('q').value = '';
+    state.q = '';
+    this.classList.remove('on');
+    renderSearch();
+    byId('q').focus();
+  });
+  var chips = document.querySelectorAll('#chips .chip');
+  for (var j = 0; j < chips.length; j++) {
+    chips[j].addEventListener('click', function(){
+      for (var k = 0; k < chips.length; k++) chips[k].classList.remove('on');
+      this.classList.add('on');
+      state.filter = this.getAttribute('data-f');
+      renderSearch();
+    });
+  }
+
+  // 列表点击（事件委托）
+  document.addEventListener('click', function(ev){
+    var el = ev.target;
+    while (el && el !== document.body) {
+      if (el.hasAttribute && el.hasAttribute('data-open')) { openDetail(+el.getAttribute('data-open')); return; }
+      if (el.hasAttribute && el.hasAttribute('data-ok')) { markReview(+el.getAttribute('data-ok'), true); return; }
+      if (el.hasAttribute && el.hasAttribute('data-again')) { markReview(+el.getAttribute('data-again'), false); return; }
+      if (el.hasAttribute && el.hasAttribute('data-go')) { switchView(el.getAttribute('data-go')); return; }
+      el = el.parentNode;
+    }
+  });
+
+  // 详情
+  byId('dClose').addEventListener('click', closeDetail);
+  byId('mask').addEventListener('click', function(ev){ if (ev.target === this) closeDetail(); });
+  document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') closeDetail(); });
+
+  byId('tgPy').addEventListener('click', function(){
+    state.showPy = !state.showPy;
+    byId('dPoem').classList.toggle('hide-py', !state.showPy);
+    this.textContent = state.showPy ? '拼音 开' : '拼音 关';
+    this.className = 'btn sm' + (state.showPy ? ' tool-on' : '');
+  });
+  byId('tgTr').addEventListener('click', function(){
+    state.showTr = !state.showTr;
+    byId('dPoem').classList.toggle('hide-tr', !state.showTr);
+    this.textContent = state.showTr ? '译文 开' : '译文 关';
+    this.className = 'btn sm' + (state.showTr ? ' tool-on' : '');
+  });
+  byId('dLearn').addEventListener('click', function(){
+    if (state.openId == null) return;
+    if (state.learned[state.openId]) removeFromLibrary(state.openId);
+    else addToLibrary(state.openId);
+  });
+  byId('tgRead').addEventListener('click', function(){
+    var p = findPoem(state.openId); if (!p) return;
+    if (!ttsSupported()){ toast('当前环境不支持语音朗读'); return; }
+    if (window.speechSynthesis.speaking){ window.speechSynthesis.cancel(); this.textContent = '朗读'; return; }
+    this.textContent = '停止';
+    readPoem(p);
+  });
+
+  // 趣味练习：模式切换
+  var pm = document.querySelectorAll('#playMode .chip');
+  for (var pi = 0; pi < pm.length; pi++){
+    pm[pi].addEventListener('click', function(){
+      for (var pk = 0; pk < pm.length; pk++) pm[pk].classList.remove('on');
+      this.classList.add('on');
+      play.mode = this.getAttribute('data-m');
+      play.last = -1;
+      play.score.correct = 0; play.score.streak = 0;
+      startRound();
+    });
+  }
+
+  // 备份
+  byId('btnExport').addEventListener('click', exportJSON);
+  byId('btnExport2').addEventListener('click', exportJSON);
+  byId('btnImport').addEventListener('click', function(){ byId('fileInput').click(); });
+  byId('btnImport2').addEventListener('click', function(){ byId('fileInput').click(); });
+  byId('fileInput').addEventListener('change', function(){
+    if (this.files && this.files[0]) importJSON(this.files[0]);
+    this.value = '';
+  });
+
+  // 清空
+  byId('btnClearAll').addEventListener('click', function(){
+    if (!confirm('确定清空全部学习记录吗？此操作不可撤销，建议先导出备份。')) return;
+    state.learned = {};
+    state.demo = false;
+    saveState();
+    refreshAll();
+    toast('已清空学习记录');
+  });
+  byId('btnClearDemo').addEventListener('click', function(){
+    if (!confirm('清空示例数据，从头开始？')) return;
+    state.learned = {};
+    state.demo = false;
+    saveState();
+    refreshAll();
+    toast('示例已清空，去挑第一首诗吧');
+  });
+}
+
+/* ============ 启动 ============ */
+document.addEventListener('DOMContentLoaded', function(){
+  loadState();      // 1. 读数据（或写入示例）
+  bind();           // 2. 绑定事件
+  refreshAll();     // 3. 一次性渲染所有视图
+});
+</script>
+</body>
+</html>
