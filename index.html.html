@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>古诗词学习工作台</title>
+<style>
+:root{--primary:#2f5d50;--accent:#e8b87a;--bg:#f5f1e8;--card:#ffffff;--text:#333;--muted:#888;--border:#e0d8c3;--success:#4caf50;--danger:#e57373}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+header{background:var(--primary);color:#fff;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+header h1{font-size:20px;font-weight:600}
+nav{display:flex;gap:8px;flex-wrap:wrap}
+nav button{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:14px;transition:.2s}
+nav button:hover,nav button.active{background:var(--accent);color:var(--primary);border-color:var(--accent)}
+main{max-width:960px;margin:20px auto;padding:0 16px}
+.section{display:none}
+.section.active{display:block}
+.card{background:var(--card);border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+input,select{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:15px;margin-bottom:12px}
+button.btn{background:var(--primary);color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:14px;margin-right:8px;margin-top:4px}
+button.btn:hover{opacity:.9}
+button.btn-accent{background:var(--accent);color:var(--primary)}
+button.btn-danger{background:var(--danger);color:#fff}
+button.btn-success{background:var(--success);color:#fff}
+button.btn-ghost{background:transparent;color:var(--primary);border:1px solid var(--primary)}
+.result-item{border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;cursor:pointer;transition:.2s}
+.result-item:hover{background:#faf7ee;border-color:var(--accent)}
+.pinyin{color:#b85c2a;font-size:14px;letter-spacing:1px}
+.line{margin:6px 0}
+.translation{background:#faf7ee;padding:12px;border-radius:8px;margin-top:10px;font-size:14px}
+.note{font-size:13px;color:#555;margin-top:8px}
+.tag{display:inline-block;background:#eee;padding:2px 8px;border-radius:10px;font-size:12px;margin-right:6px;color:#666}
+.star{color:var(--accent);cursor:pointer;font-size:18px;float:right}
+.game-box{text-align:center;padding:24px}
+.game-box .question{font-size:22px;margin:18px 0;line-height:1.8}
+.game-box input{width:auto;display:inline-block;text-align:center;font-size:18px;padding:8px;margin:4px}
+.options button{display:block;width:100%;margin:4px 0;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:16px}
+.options button:hover{border-color:var(--accent)}
+.pair-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.pair-item{padding:12px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;text-align:center}
+.pair-item.selected{border-color:var(--accent);background:#fef8ec}
+.pair-item.matched{background:#e8f5e9;border-color:var(--success);cursor:default}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;z-index:999;display:none}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:20px;margin-top:40px}
+@media(max-width:600px){header{flex-direction:column;align-items:flex-start}nav{width:100%}.pair-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📜 古诗词学习工作台</h1>
+  <nav>
+    <button data-tab="search" class="active">搜索</button>
+    <button data-tab="library">已学习题库</button>
+    <button data-tab="review">趣味复习</button>
+    <button data-tab="data">导入/导出</button>
+  </nav>
+</header>
+
+<main>
+  <div id="search" class="section active">
+    <div class="card">
+      <input id="authorInput" placeholder="输入作者（如：李白）">
+      <input id="titleInput" placeholder="输入诗词标题（如：静夜思）">
+      <button class="btn" onclick="doSearch()">🔍 搜索</button>
+      <button class="btn btn-ghost" onclick="clearSearch()">清空</button>
+    </div>
+    <div id="searchResult"></div>
+  </div>
+
+  <div id="library" class="section">
+    <div class="card">
+      <h3>📚 我的学习题库</h3>
+      <p style="color:var(--muted);font-size:13px">已学习 <span id="libCount">0</span> 首</p>
+      <div id="libraryList"></div>
+    </div>
+  </div>
+
+  <div id="review" class="section">
+    <div class="card">
+      <h3>🎮 趣味复习</h3>
+      <p>从已学习的诗词中随机出题</p>
+      <button class="btn" onclick="startGame('fill')">✏️ 填字游戏</button>
+      <button class="btn btn-accent" onclick="startGame('choice')">🎯 选择题</button>
+      <button class="btn btn-success" onclick="startGame('pair')">🔗 诗句配对</button>
+      <div id="gameArea" class="game-box" style="display:none"></div>
+    </div>
+  </div>
+
+  <div id="data" class="section">
+    <div class="card">
+      <h3>📤 导入 / 导出学习记录</h3>
+      <p style="font-size:13px;color:var(--muted)">记录仅保存在本浏览器，换设备需手动导出再导入。</p>
+      <button class="btn" onclick="exportData()">导出为 JSON</button>
+      <input type="file" id="importFile" accept=".json" style="border:none;padding-left:0">
+      <button class="btn btn-accent" onclick="importData()">导入记录</button>
+    </div>
+  </div>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<footer>数据存储在本地浏览器 · 纯前端 · 无服务器</footer>
+
+<script>
+// ========== 诗词数据库（中小学常见73首） ==========
+const poems = [
+{title:"静夜思",author:"李白",lines:["床前明月光","疑是地上霜","举头望明月","低头思故乡"],pinyin:["chuáng qián míng yuè guāng","yí shì dì shàng shuāng","jǔ tóu wàng míng yuè","dī tóu sī gù xiāng"],translation:"床前洒满明亮的月光，好像地上铺了一层白霜。抬起头望着天上的明月，低下头不禁思念起故乡。",notes:[{word:"疑",mean:"好像"},{word:"举头",mean:"抬头"}]},
+{title:"春晓",author:"孟浩然",lines:["春眠不觉晓","处处闻啼鸟","夜来风雨声","花落知多少"],pinyin:["chūn mián bù jué xiǎo","chù chù wén tí niǎo","yè lái fēng yǔ shēng","huā luò zhī duō shǎo"],translation:"春日酣睡，不知不觉天已破晓，到处都能听到鸟儿的啼叫。回想起昨夜的风雨声，不知道有多少花朵被吹落。",notes:[{word:"晓",mean:"天亮"},{word:"啼鸟",mean:"鸟叫"}]},
+{title:"咏鹅",author:"骆宾王",lines:["鹅鹅鹅","曲项向天歌","白毛浮绿水","红掌拨清波"],pinyin:["é é é","qū xiàng xiàng tiān gē","bái máo fú lǜ shuǐ","hóng zhǎng bō qīng bō"],translation:"鹅呀鹅，弯着脖子朝天欢叫。洁白的羽毛漂浮在碧绿的水面上，红红的脚掌拨动着清澈的水波。",notes:[{word:"曲项",mean:"弯着脖子"},{word:"拨",mean:"划动"}]},
+{title:"悯农（其二）",author:"李绅",lines:["锄禾日当午","汗滴禾下土","谁知盘中餐","粒粒皆辛苦"],pinyin:["chú hé rì dāng wǔ","hàn dī hé xià tǔ","shuí zhī pán zhōng cān","lì lì jiē xīn kǔ"],translation:"农民在正午烈日下锄禾，汗水滴落在禾苗下的泥土里。谁知道盘子里的饭食，每一粒都是辛苦换来的。",notes:[{word:"悯",mean:"怜悯"},{word:"皆",mean:"都"}]},
+{title:"登鹳雀楼",author:"王之涣",lines:["白日依山尽","黄河入海流","欲穷千里目","更上一层楼"],pinyin:["bái rì yī shān jìn","huáng hé rù hǎi liú","yù qióng qiān lǐ mù","gèng shàng yī céng lóu"],translation:"夕阳依傍着西山慢慢沉落，黄河奔腾着流向大海。想要看到更远的景色，就要再登上一层楼。",notes:[{word:"穷",mean:"尽，看到尽头"},{word:"千里目",mean:"看到千里之外的视力"}]},
+{title:"望庐山瀑布",author:"李白",lines:["日照香炉生紫烟","遥看瀑布挂前川","飞流直下三千尺","疑是银河落九天"],pinyin:["rì zhào xiāng lú shēng zǐ yān","yáo kàn pù bù guà qián chuān","fēi liú zhí xià sān qiān chǐ","yí shì yín hé luò jiǔ tiān"],translation:"阳光照在香炉峰上，升起紫色烟雾；远远看去瀑布像挂在山前的河流。水流从高处飞泻而下，让人怀疑是银河从天上落下来。",notes:[{word:"香炉",mean:"香炉峰"},{word:"九天",mean:"天空最高处"}]},
+{title:"绝句",author:"杜甫",lines:["两个黄鹂鸣翠柳","一行白鹭上青天","窗含西岭千秋雪","门泊东吴万里船"],pinyin:["liǎng gè huáng lí míng cuì liǔ","yī xíng bái lù shàng qīng tiān","chuāng hán xī lǐng qiān qiū xuě","mén bó dōng wú wàn lǐ chuán"],translation:"两只黄鹂在翠绿的柳树上鸣叫，一行白鹭飞上蓝天。窗口映着西岭千年不化的积雪，门前停泊着来自东吴的万里船只。",notes:[{word:"含",mean:"包含，映照"},{word:"泊",mean:"停船"}]},
+{title:"江雪",author:"柳宗元",lines:["千山鸟飞绝","万径人踪灭","孤舟蓑笠翁","独钓寒江雪"],pinyin:["qiān shān niǎo fēi jué","wàn jìng rén zōng miè","gū zhōu suō lì wēng","dú diào hán jiāng xuě"],translation:"所有的山上鸟儿都飞走了，所有的路上都不见人的踪影。只有一位披着蓑衣、戴着斗笠的老翁，独自在寒冷的江面上钓鱼。",notes:[{word:"绝",mean:"断绝，没有"},{word:"蓑笠",mean:"蓑衣和斗笠"}]},
+{title:"寻隐者不遇",author:"贾岛",lines:["松下问童子","言师采药去","只在此山中","云深不知处"],pinyin:["sōng xià wèn tóng zǐ","yán shī cǎi yào qù","zhī zài cǐ shān zhōng","yún shēn bù zhī chù"],translation:"在松树下问童子，他说师父采药去了。就在这座山里，可是云雾太深，不知道具体在哪里。",notes:[{word:"隐者",mean:"隐居的人"},{word:"处",mean:"地方"}]},
+{title:"池上",author:"白居易",lines:["小娃撑小艇","偷采白莲回","不解藏踪迹","浮萍一道开"],pinyin:["xiǎo wá chēng xiǎo tǐng","tōu cǎi bái lián huí","bù jiě cáng zōng jì","fú píng yī dào kāi"],translation:"小孩撑着小船，偷偷采了白莲回来。不懂得隐藏踪迹，水面的浮萍被划开一道痕迹。",notes:[{word:"艇",mean:"小船"},{word:"解",mean:"懂得"}]},
+{title:"忆江南",author:"白居易",lines:["江南好","风景旧曾谙","日出江花红胜火","春来江水绿如蓝","能不忆江南"],pinyin:["jiāng nán hǎo","fēng jǐng jiù céng ān","rì chū jiāng huā hóng shèng huǒ","chūn lái jiāng shuǐ lǜ rú lán","néng bù yì jiāng nán"],translation:"江南真美，那里的风景我以前就很熟悉。太阳出来时江边的花比火还红，春天江水绿得像蓝草一样。怎么能不怀念江南呢？",notes:[{word:"谙",mean:"熟悉"},{word:"蓝",mean:"蓝草，可制染料"}]},
+{title:"画",author:"王维",lines:["远看山有色","近听水无声","春去花还在","人来鸟不惊"],pinyin:["yuǎn kàn shān yǒu sè","jìn tīng shuǐ wú shēng","chūn qù huā hái zài","rén lái niǎo bù jīng"],translation:"远看山有颜色，走近听水却没有声音。春天过去了花还在盛开，人走近了鸟也不受惊飞走。",notes:[{word:"惊",mean:"受惊"}]},
+{title:"风",author:"李峤",lines:["解落三秋叶","能开二月花","过江千尺浪","入竹万竿斜"],pinyin:["jiě luò sān qiū yè","néng kāi èr yuè huā","guò jiāng qiān chǐ làng","rù zhú wàn gān xié"],translation:"风能吹落秋天的树叶，能催开春天的花朵。刮过江面掀起千尺巨浪，吹进竹林使万竿竹子倾斜。",notes:[{word:"解",mean:"能够"},{word:"三秋",mean:"秋季"}]},
+{title:"鹿柴",author:"王维",lines:["空山不见人","但闻人语响","返景入深林","复照青苔上"],pinyin:["kōng shān bù jiàn rén","dàn wén rén yǔ xiǎng","fǎn jǐng rù shēn lín","fù zhào qīng tái shàng"],translation:"空旷的山中看不见人，只听到人说话的声音。夕阳返照进深林，又照在青苔之上。",notes:[{word:"柴",mean:"栅栏"},{word:"返景",mean:"夕阳返照的光"}]},
+{title:"赠汪伦",author:"李白",lines:["李白乘舟将欲行","忽闻岸上踏歌声","桃花潭水深千尺","不及汪伦送我情"],pinyin:["lǐ bái chéng zhōu jiāng yù xíng","hū wén àn shàng tà gē shēng","táo huā tán shuǐ shēn qiān chǐ","bù jí wāng lún sòng wǒ qíng"],translation:"李白坐船正要出发，忽然听到岸上传来踏歌的声音。桃花潭的水即使有千尺深，也比不上汪伦送我的情谊。",notes:[{word:"踏歌",mean:"边走边唱"},{word:"不及",mean:"比不上"}]},
+{title:"黄鹤楼送孟浩然之广陵",author:"李白",lines:["故人西辞黄鹤楼","烟花三月下扬州","孤帆远影碧空尽","唯见长江天际流"],pinyin:["gù rén xī cí huáng hè lóu","yān huā sān yuè xià yáng zhōu","gū fān yuǎn yǐng bì kōng jìn","wéi jiàn cháng jiāng tiān jì liú"],translation:"老朋友在黄鹤楼与我告别，在繁花似锦的三月东下去扬州。孤单的帆船远影消失在碧空尽头，只看见长江向天边流去。",notes:[{word:"故人",mean:"老朋友"},{word:"烟花",mean:"繁花春景"}]},
+{title:"早发白帝城",author:"李白",lines:["朝辞白帝彩云间","千里江陵一日还","两岸猿声啼不住","轻舟已过万重山"],pinyin:["zhāo cí bái dì cǎi yún jiān","qiān lǐ jiāng líng yī rì huán","liǎng àn yuán shēng tí bù zhù","qīng zhōu yǐ guò wàn chóng shān"],translation:"清晨告别白帝城，在彩云之间；千里之外的江陵一天就能到达。两岸猿猴的叫声还没停，轻快的小船已经穿过了万重山峦。",notes:[{word:"朝",mean:"早晨"},{word:"还",mean:"返回，到达"}]},
+{title:"望天门山",author:"李白",lines:["天门中断楚江开","碧水东流至此回","两岸青山相对出","孤帆一片日边来"],pinyin:["tiān mén zhōng duàn chǔ jiāng kāi","bì shuǐ dōng liú zhì cǐ huí","liǎng àn qīng shān xiāng duì chū","gū fān yī piàn rì biān lái"],translation:"天门山被长江从中间劈开，碧绿的江水东流到这里回旋。两岸青山相对耸立，一叶孤帆从太阳旁边驶来。",notes:[{word:"中断",mean:"从中间断开"},{word:"回",mean:"回旋"}]},
+{title:"别董大",author:"高适",lines:["千里黄云白日曛","北风吹雁雪纷纷","莫愁前路无知己","天下谁人不识君"],pinyin:["qiān lǐ huáng yún bái rì xūn","běi fēng chuī yàn xuě fēn fēn","mò chóu qián lù wú zhī jǐ","tiān xià shuí rén bù shí jūn"],translation:"千里黄云遮天蔽日，北风吹着大雁、大雪纷飞。不要担心前路没有知己，天下谁不认识你呢？",notes:[{word:"曛",mean:"昏暗"},{word:"君",mean:"你"}]},
+{title:"绝句",author:"杜甫",lines:["迟日江山丽","春风花草香","泥融飞燕子","沙暖睡鸳鸯"],pinyin:["chí rì jiāng shān lì","chūn fēng huā cǎo xiāng","ní róng fēi yàn zǐ","shā nuǎn shuì yuān yāng"],translation:"春日阳光照耀江山秀丽，春风送来花草的芳香。泥土湿润燕子飞来飞去，沙滩温暖鸳鸯安睡。",notes:[{word:"迟日",mean:"春日"},{word:"泥融",mean:"泥土湿润"}]},
+{title:"春夜喜雨",author:"杜甫",lines:["好雨知时节","当春乃发生","随风潜入夜","润物细无声","野径云俱黑","江船火独明","晓看红湿处","花重锦官城"],pinyin:["hǎo yǔ zhī shí jié","dāng chūn nǎi fā shēng","suí fēng qián rù yè","rùn wù xì wú shēng","yě jìng yún jù hēi","jiāng chuán huǒ dú míng","xiǎo kàn hóng shī chù","huā zhòng jǐn guān chéng"],translation:"好雨知道时节，正当春天万物生长时降临。随着春风悄悄在夜里落下，细细滋润万物没有声音。田野小路和云一样黑，只有江上渔船的灯火明亮。清晨看被雨水打湿的红花，锦官城的花朵沉甸甸的。",notes:[{word:"潜",mean:"悄悄"},{word:"重",mean:"沉重，花朵饱含雨水"}]},
+{title:"枫桥夜泊",author:"张继",lines:["月落乌啼霜满天","江枫渔火对愁眠","姑苏城外寒山寺","夜半钟声到客船"],pinyin:["yuè luò wū tí shuāng mǎn tiān","jiāng fēng yú huǒ duì chóu mián","gū sū chéng wài hán shān sì","yè bàn zhōng shēng dào kè chuán"],translation:"月亮落下乌鸦啼叫，寒霜布满天空；对着江边的枫树和渔船灯火忧愁难眠。姑苏城外寒山寺，半夜敲钟的声音传到客船上。",notes:[{word:"渔火",mean:"渔船上的灯火"},{word:"姑苏",mean:"苏州"}]},
+{title:"滁州西涧",author:"韦应物",lines:["独怜幽草涧边生","上有黄鹂深树鸣","春潮带雨晚来急","野渡无人舟自横"],pinyin:["dú lián yōu cǎo jiàn biān shēng","shàng yǒu huáng lí shēn shù míng","chūn cháo dài yǔ wǎn lái jí","yě dù wú rén zhōu zì héng"],translation:"我独爱涧边生长的幽草，上面有黄鹂在深树中鸣叫。春潮带着雨水在傍晚来得又急又猛，野外的渡口没有人，小船独自横在水面。",notes:[{word:"怜",mean:"喜爱"},{word:"野渡",mean:"野外的渡口"}]},
+{title:"游子吟",author:"孟郊",lines:["慈母手中线","游子身上衣","临行密密缝","意恐迟迟归","谁言寸草心","报得三春晖"],pinyin:["cí mǔ shǒu zhōng xiàn","yóu zǐ shēn shàng yī","lín xíng mì mì féng","yì kǒng chí chí guī","shuí yán cùn cǎo xīn","bào dé sān chūn huī"],translation:"慈母手中的针线，缝成游子身上的衣服。临行前密密地缝，担心孩子迟迟不归。谁说小草般的心意，能报答春天阳光般的母爱呢？",notes:[{word:"游子",mean:"离家远游的人"},{word:"三春晖",mean:"春天的阳光，比喻母爱"}]},
+{title:"江畔独步寻花",author:"杜甫",lines:["黄四娘家花满蹊","千朵万朵压枝低","留连戏蝶时时舞","自在娇莺恰恰啼"],pinyin:["huáng sì niáng jiā huā mǎn xī","qiān duǒ wàn duǒ yā zhī dī","liú lián xì dié shí shí wǔ","zì zài jiāo yīng qià qià tí"],translation:"黄四娘家的小路上开满了花，千朵万朵把枝条都压弯了。留恋的蝴蝶时时飞舞，自由自在的黄莺恰恰啼叫。",notes:[{word:"蹊",mean:"小路"},{word:"留连",mean:"留恋不止"}]},
+{title:"山行",author:"杜牧",lines:["远上寒山石径斜","白云生处有人家","停车坐爱枫林晚","霜叶红于二月花"],pinyin:["yuǎn shàng hán shān shí jìng xié","bái yún shēng chù yǒu rén jiā","tíng chē zuò ài fēng lín wǎn","shuāng yè hóng yú èr yuè huā"],translation:"沿着弯弯曲曲的石头小路登上寒山，白云升起的地方有人家。停下车是因为喜爱傍晚的枫林，经霜的枫叶比二月的花还红。",notes:[{word:"坐",mean:"因为"},{word:"于",mean:"比"}]},
+{title:"清明",author:"杜牧",lines:["清明时节雨纷纷","路上行人欲断魂","借问酒家何处有","牧童遥指杏花村"],pinyin:["qīng míng shí jié yǔ fēn fēn","lù shàng xíng rén yù duàn hún","jiè wèn jiǔ jiā hé chù yǒu","mù tóng yáo zhǐ xìng huā cūn"],translation:"清明时节细雨纷纷，路上的行人情绪低落。请问哪里有酒家？牧童远远地指向杏花村。",notes:[{word:"断魂",mean:"形容伤感极深"},{word:"借问",mean:"请问"}]},
+{title:"江南春",author:"杜牧",lines:["千里莺啼绿映红","水村山郭酒旗风","南朝四百八十寺","多少楼台烟雨中"],pinyin:["qiān lǐ yīng tí lǜ yìng hóng","shuǐ cūn shān guō jiǔ qí fēng","nán cháo sì bǎi bā shí sì","duō shǎo lóu tái yān yǔ zhōng"],translation:"千里江南黄莺啼叫、绿树红花相映，水边村落和山城酒旗飘扬。南朝留下四百八十座寺庙，多少楼台掩映在烟雨之中。",notes:[{word:"山郭",mean:"山城"},{word:"楼台",mean:"寺庙建筑"}]},
+{title:"蜂",author:"罗隐",lines:["不论平地与山尖","无限风光尽被占","采得百花成蜜后","为谁辛苦为谁甜"],pinyin:["bù lùn píng dì yǔ shān jiān","wú xiàn fēng guāng jìn bèi zhàn","cǎi dé bǎi huā chéng mì hòu","wèi shuí xīn kǔ wèi shuí tián"],translation:"不论平地还是山顶，无限风光都被蜜蜂占据。采尽百花酿成蜜后，到底是为谁辛苦为谁甜呢？",notes:[{word:"山尖",mean:"山顶"},{word:"占",mean:"占据"}]},
+{title:"江上渔者",author:"范仲淹",lines:["江上往来人","但爱鲈鱼美","君看一叶舟","出没风波里"],pinyin:["jiāng shàng wǎng lái rén","dàn ài lú yú měi","jūn kàn yī yè zhōu","chū mò fēng bō lǐ"],translation:"江上来来往往的人，只喜爱鲈鱼的美味。你看那一叶小船，在风浪中时隐时现。",notes:[{word:"但",mean:"只"},{word:"出没",mean:"时隐时现"}]},
+{title:"元日",author:"王安石",lines:["爆竹声中一岁除","春风送暖入屠苏","千门万户曈曈日","总把新桃换旧符"],pinyin:["bào zhú shēng zhōng yī suì chú","chūn fēng sòng nuǎn rù tú sū","qiān mén wàn hù tóng tóng rì","zǒng bǎ xīn táo huàn jiù fú"],translation:"爆竹声中旧的一年过去了，春风送来暖意，人们畅饮屠苏酒。初升的太阳照耀千家万户，大家都把旧的桃符换成新的。",notes:[{word:"屠苏",mean:"酒名"},{word:"桃符",mean:"春联的前身"}]},
+{title:"泊船瓜洲",author:"王安石",lines:["京口瓜洲一水间","钟山只隔数重山","春风又绿江南岸","明月何时照我还"],pinyin:["jīng kǒu guā zhōu yī shuǐ jiān","zhōng shān zhǐ gé shù chóng shān","chūn fēng yòu lǜ jiāng nán àn","míng yuè hé shí zhào wǒ huán"],translation:"京口和瓜洲只隔一条江水，钟山也只隔几重山。春风又吹绿了江南两岸，明月什么时候照我回家？",notes:[{word:"绿",mean:"吹绿"},{word:"还",mean:"回家"}]},
+{title:"书湖阴先生壁",author:"王安石",lines:["茅檐长扫净无苔","花木成畦手自栽","一水护田将绿绕","两山排闼送青来"],pinyin:["máo yán cháng sǎo jìng wú tái","huā mù chéng qí shǒu zì zāi","yī shuǐ hù tián jiāng lǜ rào","liǎng shān pái tà sòng qīng lái"],translation:"茅草屋檐经常打扫，干净得没有青苔；花草树木成垄，都是亲手栽种。一条溪水环绕着绿油油的田地，两座山推开门把青翠送进来。",notes:[{word:"畦",mean:"田园中划分的小区"},{word:"排闼",mean:"推门"}]},
+{title:"六月二十七日望湖楼醉书",author:"苏轼",lines:["黑云翻墨未遮山","白雨跳珠乱入船","卷地风来忽吹散","望湖楼下水如天"],pinyin:["hēi yún fān mò wèi zhē shān","bái yǔ tiào zhū luàn rù chuán","juǎn dì fēng lái hū chuī sàn","wàng hú lóu xià shuǐ rú tiān"],translation:"黑云像打翻的墨汁还没遮住山，白色的雨点像跳动的珍珠乱入船中。忽然卷地而来的风吹散了云雨，望湖楼下的湖水像天空一样开阔。",notes:[{word:"翻墨",mean:"打翻的墨汁"},{word:"跳珠",mean:"跳动的珍珠"}]},
